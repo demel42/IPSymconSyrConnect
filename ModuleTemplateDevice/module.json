@@ -1,12 +1,12 @@
 {
-	"id": "{B052AEAB-2687-02EB-DF40-74191E242A0B}",
-	"name": "ModuleTemplate Device",
+	"id": "{69C41FD6-14D2-6296-88BB-D0C0300F8FEB}",
+	"name": "Syr Connect",
 	"type": 3,
 	"vendor": "",
 	"aliases": [],
 	"parentRequirements": [],
 	"childRequirements": [],
 	"implemented": [],
-	"prefix": "ModuleTemplate",
-	"url": "https://github.com/demel42/ModuleTemplate/blob/master/README.md"
+	"prefix": "SyrConnect",
+	"url": "https://github.com/demel42/IPSymconSyrConnect/blob/maain/README.md"
 }
