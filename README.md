@@ -60,9 +60,9 @@ Es werden folgende Variablenprofile angelegt:
 ## 6. Anhang
 
 ### GUIDs
-- Modul: `{0DCE4B6F-9176-DC9A-5502-1AF2B7573EB5}`
+- Modul: `{4A7B6863-CC71-D595-BC77-C0B14043994B}`
 - Instanzen:
-  - ModuleTemplateDevice: `{B052AEAB-2687-02EB-DF40-74191E242A0B}`
+  - SyrConnect: `{69C41FD6-14D2-6296-88BB-D0C0300F8FEB}`
 - Nachrichten:
 
 ### Quellen
