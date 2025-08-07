@@ -3,19 +3,22 @@
 		"de": {
 			"Syr Connect": "Syr Connect",
 
-			"__properties__": "",
+			"__function__": "CheckConfiguration",
+			"Hostname must be specified": "Host muss angegeben sein",
+
+			"__elements__": "",
 			"Disable instance": "Instanz deaktivieren",
+			"Basic configuration": "Basis-Konfiguration",
+			"Host": "Host",
+			"Port": "Port",
+
+			"Module type": "Modultyp",
 
 			"Update interval": "Aktualisierungsintervall",
 			"Seconds": "Sekunden",
 
-			"Generate message when the gateway is inactive": "Meldung erzeugen wenn der Gateway inaktiv ist",
-
 			"__actions__": "",
 			"Update status": "Aktualisiere Status",
-
-			"__messages__": "",
-			"Instance has no active gateway": "Instanz hat keinen aktiven Gateway",
 
 			"__end__": ""
 		}

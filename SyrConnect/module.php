@@ -10,6 +10,8 @@ class SyrConnect extends IPSModule
     use SyrConnect\StubsCommonLib;
     use SyrConnectLocalLib;
 
+    public static $SYRCONNECT_MODULE_SAFETECH_PLUS = 1;
+
     public function __construct(string $InstanceID)
     {
         parent::__construct($InstanceID);
@@ -28,14 +30,15 @@ class SyrConnect extends IPSModule
 
         $this->RegisterPropertyBoolean('module_disable', false);
 
-        $this->RegisterPropertyBoolean('log_no_parent', true);
+        $this->RegisterPropertyString('host', '');
+        $this->RegisterPropertyInteger('port', 5333);
+
+        $this->RegisterPropertyInteger('module_type', self::$SYRCONNECT_MODULE_SAFETECH_PLUS);
 
         $this->RegisterPropertyInteger('update_interval', 60);
 
         $this->RegisterAttributeString('UpdateInfo', json_encode([]));
         $this->RegisterAttributeString('ModuleStats', json_encode([]));
-
-        $this->RegisterAttributeString('external_update_interval', '');
 
         $this->InstallVarProfiles(false);
 
@@ -49,20 +52,19 @@ class SyrConnect extends IPSModule
         parent::MessageSink($timestamp, $senderID, $message, $data);
 
         if ($message == IPS_KERNELMESSAGE && $data[0] == KR_READY) {
-            $this->OverwriteUpdateInterval();
+            $this->SetUpdateInterval();
         }
-    }
-
-    private function CheckModulePrerequisites()
-    {
-        $r = [];
-
-        return $r;
     }
 
     private function CheckModuleConfiguration()
     {
         $r = [];
+
+        $host = $this->ReadPropertyString('host');
+        if ($host == '') {
+            $this->SendDebug(__FUNCTION__, '"host" is needed', 0);
+            $r[] = $this->Translate('Hostname must be specified');
+        }
 
         return $r;
     }
@@ -115,7 +117,7 @@ class SyrConnect extends IPSModule
         $this->MaintainStatus(IS_ACTIVE);
 
         if (IPS_GetKernelRunlevel() == KR_READY) {
-            $this->OverwriteUpdateInterval();
+            $this->SetUpdateInterval();
         }
     }
 
@@ -134,17 +136,35 @@ class SyrConnect extends IPSModule
         ];
 
         $formElements[] = [
+            'type'    => 'ExpansionPanel',
+            'items'   => [
+                [
+                    'type'    => 'ValidationTextBox',
+                    'name'    => 'host',
+                    'caption' => 'Host'
+                ],
+                [
+                    'type'     => 'Select',
+                    'name'     => 'module_type',
+                    'caption'  => 'Module type',
+                    'options'  => [
+                        [
+                            'caption' => 'SyrTech+',
+                            'value'   => self::$SYRCONNECT_MODULE_SAFETECH_PLUS,
+                        ],
+                    ],
+                    // 'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "UpdateUseFields", "");',
+                ],
+            ],
+            'caption' => 'Basic configuration',
+        ];
+
+        $formElements[] = [
             'type'    => 'NumberSpinner',
             'name'    => 'update_interval',
             'suffix'  => 'Seconds',
             'minimum' => 0,
             'caption' => 'Update interval',
-        ];
-
-        $formElements[] = [
-            'type'    => 'CheckBox',
-            'name'    => 'log_no_parent',
-            'caption' => 'Generate message when the gateway is inactive',
         ];
 
         return $formElements;
@@ -197,23 +217,10 @@ class SyrConnect extends IPSModule
 
     private function SetUpdateInterval(int $sec = null)
     {
-        if (is_null($sec)) {
-            $sec = $this->ReadAttributeString('external_update_interval');
-            if ($sec == '') {
-                $sec = $this->ReadPropertyInteger('update_interval');
-            }
+        if ($sec == '') {
+            $sec = $this->ReadPropertyInteger('update_interval');
         }
         $this->MaintainTimer('UpdateStatus', $sec * 1000);
-    }
-
-    public function OverwriteUpdateInterval(int $sec = null)
-    {
-        if (is_null($sec)) {
-            $this->WriteAttributeString('external_update_interval', '');
-        } else {
-            $this->WriteAttributeString('external_update_interval', $sec);
-        }
-        $this->SetUpdateInterval($sec);
     }
 
     private function UpdateStatus()
@@ -222,17 +229,6 @@ class SyrConnect extends IPSModule
             $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
             return;
         }
-
-        /*
-        if ($this->HasActiveParent() == false) {
-            $this->SendDebug(__FUNCTION__, 'has no active parent/gateway', 0);
-            $log_no_parent = $this->ReadPropertyBoolean('log_no_parent');
-            if ($log_no_parent) {
-                $this->LogMessage($this->Translate('Instance has no active gateway'), KL_WARNING);
-            }
-            return;
-        }
-         */
 
         $this->SendDebug(__FUNCTION__, $this->PrintTimer('UpdateStatus'), 0);
     }
