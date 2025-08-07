@@ -5,10 +5,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/../libs/common.php';
 require_once __DIR__ . '/../libs/local.php';
 
-class SyrConectDevice extends IPSModule
+class SyrConnect extends IPSModule
 {
-    use SyrConect\StubsCommonLib;
-    use SyrConectLocalLib;
+    use SyrConnect\StubsCommonLib;
+    use SyrConnectLocalLib;
 
     public function __construct(string $InstanceID)
     {
