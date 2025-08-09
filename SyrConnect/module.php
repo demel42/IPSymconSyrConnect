@@ -291,7 +291,7 @@ class SyrConnect extends IPSModule
         $msg .= $this->Translate('WLAN') . PHP_EOL;
         $val = $this->RetrieveData('WFC');
         if ($val !== false) {
-            $msg .= ' - ' . $this->Translate('SID') . ': ' . $val . PHP_EOL;
+            $msg .= ' - ' . $this->Translate('SSID') . ': ' . $val . PHP_EOL;
 
             $val = (int) $this->RetrieveData('WFS');
             $msg .= ' - ' . $this->Translate('Status') . ': ' . $this->DecodeWFS($val) . PHP_EOL;

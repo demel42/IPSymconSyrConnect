@@ -32,7 +32,7 @@
 			"WLAN": "WLAN",
 			"not configured": "nicht konfiguriert",
 			"LAN": "LAN",
-			"SID": "SID",
+			"SSID": "SSID",
 			"Status": "Status",
 			"not connected": "nicht verbunden",
 			"is being connected": "wird verbunden",
