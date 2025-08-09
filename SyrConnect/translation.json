@@ -5,20 +5,41 @@
 
 			"__function__": "CheckConfiguration",
 			"Hostname must be specified": "Host muss angegeben sein",
+			"Device type must be specified": "Gerätetyp muss angegeben sein",
 
 			"__elements__": "",
 			"Disable instance": "Instanz deaktivieren",
 			"Basic configuration": "Basis-Konfiguration",
 			"Host": "Host",
 			"Port": "Port",
-
-			"Module type": "Modultyp",
+			"Device type": "Gerätetyp",
 
 			"Update interval": "Aktualisierungsintervall",
 			"Seconds": "Sekunden",
 
+			"__options__": "",
+			"none": "nicht angegeben",
+
 			"__actions__": "",
+			"Test access": "Zugriff prüfen",
 			"Update status": "Aktualisiere Status",
+
+			"__action__": "TestAccess",
+			"Model": "Modell",
+			"Unknown model": "Unbekanntes Modell",
+			"Firmware": "Firmware",
+			"Serial number": "Seriennummer",
+			"WLAN": "WLAN",
+			"not configured": "nicht konfiguriert",
+			"LAN": "LAN",
+			"SID": "SID",
+			"Status": "Status",
+			"not connected": "nicht verbunden",
+			"is being connected": "wird verbunden",
+			"connected": "verbunden",
+			"Signal strengh": "Signalstärke",
+			"IP": "IP",
+			"MAC": "MAC",
 
 			"__end__": ""
 		}
