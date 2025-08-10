@@ -17,8 +17,12 @@
 			"Update interval": "Aktualisierungsintervall",
 			"Seconds": "Sekunden",
 
-			"__options__": "",
-			"none": "nicht angegeben",
+			"__variables__": "",
+			"Shut-off valve": "Absperrventil",
+			"Shut-off valve action": "Absperrventil-Aktion",
+			"Current profile": "Aktuelles Profil",
+			"Micro leakage test": "Mikroleckage-Test",
+			"Current withdrawal": "aktuelle Entnahme",
 
 			"__actions__": "",
 			"Test access": "Zugriff prüfen",
@@ -26,7 +30,6 @@
 
 			"__action__": "TestAccess",
 			"Model": "Modell",
-			"Unknown model": "Unbekanntes Modell",
 			"Firmware": "Firmware",
 			"Serial number": "Seriennummer",
 			"WLAN": "WLAN",
@@ -34,9 +37,6 @@
 			"LAN": "LAN",
 			"SSID": "SSID",
 			"Status": "Status",
-			"not connected": "nicht verbunden",
-			"is being connected": "wird verbunden",
-			"connected": "verbunden",
 			"Signal strengh": "Signalstärke",
 			"IP": "IP",
 			"MAC": "MAC",

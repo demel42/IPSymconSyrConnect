@@ -10,16 +10,6 @@ class SyrConnect extends IPSModule
     use SyrConnect\StubsCommonLib;
     use SyrConnectLocalLib;
 
-    public static $SYRCONNECT_TYPE_NONE = 0;
-    public static $SYRCONNECT_TYPE_TRIODFR_LS = 1;
-    public static $SYRCONNECT_TYPE_SAFETECH_PLUS = 2;
-    public static $SYRCONNECT_TYPE_NEOSOFT_2500 = 3;
-    public static $SYRCONNECT_TYPE_NEOSOFT_5000 = 4;
-
-    public static $SYRCONNECT_WLANSTATUS_DISCONNECTED = 0;
-    public static $SYRCONNECT_WLANSTATUS_CONNECTING = 1;
-    public static $SYRCONNECT_WLANSTATUS_CONNECTED = 2;
-
     public function __construct(string $InstanceID)
     {
         parent::__construct($InstanceID);
@@ -41,7 +31,7 @@ class SyrConnect extends IPSModule
         $this->RegisterPropertyString('host', '');
         $this->RegisterPropertyInteger('port', 5333);
 
-        $this->RegisterPropertyInteger('device_type', self::$SYRCONNECT_TYPE_NONE);
+        $this->RegisterPropertyInteger('device_type', self::$DEVICE_TYPE_NONE);
 
         $this->RegisterPropertyInteger('update_interval', 60);
 
@@ -75,7 +65,7 @@ class SyrConnect extends IPSModule
         }
 
         $device_type = $this->ReadPropertyInteger('device_type');
-        if ($device_type == self::$SYRCONNECT_TYPE_NONE) {
+        if ($device_type == self::$DEVICE_TYPE_NONE) {
             $this->SendDebug(__FUNCTION__, '"device_type" must be set', 0);
             $r[] = $this->Translate('Device type must be specified');
         }
@@ -121,6 +111,29 @@ class SyrConnect extends IPSModule
 
         $vpos = 1;
 
+        $u = $this->Use4Ident('VLV');
+        $this->MaintainVariable('ValveState', $this->Translate('Shut-off valve'), VARIABLETYPE_INTEGER, 'SyrConnect.ValveState', $vpos++, $u);
+
+        $u = $this->Use4Ident('AB');
+        $e = $this->Enable4Ident('AB');
+        $this->MaintainVariable('ValveAction', $this->Translate('Shut-off valve action'), VARIABLETYPE_BOOLEAN, 'SyrConnect.ValveAction', $vpos++, $u);
+        if ($u) {
+            $this->MaintainAction('ValveAction', $e);
+        }
+
+        $u = $this->Use4Ident('PRF');
+        $e = $this->Enable4Ident('PRF');
+        $this->MaintainVariable('CurrentProfile', $this->Translate('Current profile'), VARIABLETYPE_BOOLEAN, 'SyrConnect.CurrentProfile', $vpos++, $u);
+        if ($u) {
+            $this->MaintainAction('CurrentProfile', $e);
+        }
+
+        $u = $this->Use4Ident('DSV');
+        $this->MaintainVariable('MicroleakageTestState', $this->Translate('Micro leakage test'), VARIABLETYPE_INTEGER, 'SyrConnect.MicroleakageTestState', $vpos++, $u);
+
+        $u = $this->Use4Ident('AVO');
+        $this->MaintainVariable('CurrentWithdrawal', $this->Translate('Current withdrawal'), VARIABLETYPE_INTEGER, 'SyrConnect.Volumne', $vpos++, $u);
+
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
             $this->MaintainTimer('UpdateStatus', 0);
@@ -161,17 +174,7 @@ class SyrConnect extends IPSModule
                     'type'     => 'Select',
                     'name'     => 'device_type',
                     'caption'  => 'Device type',
-                    'options'  => [
-                        [
-                            'caption' => $this->Translate('none'),
-                            'value'   => self::$SYRCONNECT_TYPE_NONE,
-                        ],
-                        [
-                            'caption' => 'SyrTech+',
-                            'value'   => self::$SYRCONNECT_TYPE_SAFETECH_PLUS,
-                        ],
-                    ],
-                    // 'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "UpdateUseFields", "");',
+                    'options'  => $this->DeviceTypeAsOptions(),
                 ],
             ],
             'caption' => 'Basic configuration',
@@ -256,88 +259,55 @@ class SyrConnect extends IPSModule
             return;
         }
 
-        $msg = '';
-
         $device_type = $this->ReadPropertyInteger('device_type');
-        switch ($device_type) {
-            case self::$SYRCONNECT_TYPE_TRIODFR_LS:
-                $msg = $this->Translate('Model') . ': TrioDFR LS' . PHP_EOL;
-                break;
-            case self::$SYRCONNECT_TYPE_SAFETECH_PLUS:
-                $msg = $this->Translate('Model') . ': SafeTech +' . PHP_EOL;
-                break;
-            case self::$SYRCONNECT_TYPE_NEOSOFT_2500:
-                $msg = $this->Translate('Model') . ': NeoSoft 2500' . PHP_EOL;
-                break;
-            case self::$SYRCONNECT_TYPE_NEOSOFT_5000:
-                $msg = $this->Translate('Model') . ': NeoSoft 5000' . PHP_EOL;
-                break;
-            default:
-                $msg = $this->Translate('Unknown model');
-                $this->PopupMessage($msg);
-                return;
-        }
+        $msg = $this->DeviceType2String($device_type);
 
-        $msg .= PHP_EOL;
+        if ($device_type != self::$DEVICE_TYPE_NONE) {
+            $msg = $this->Translate('Model') . ': ' . $msg . PHP_EOL;
 
-        $val = $this->RetrieveData('VER');
-        $msg .= $this->Translate('Firmware') . ': ' . $val . PHP_EOL;
+            $msg .= PHP_EOL;
 
-        $val = $this->RetrieveData('SRN');
-        $msg .= $this->Translate('Serial number') . ': ' . $val . PHP_EOL;
+            $val = $this->RetrieveData('VER');
+            $msg .= $this->Translate('Firmware') . ': ' . $val . PHP_EOL;
 
-        $msg .= PHP_EOL;
+            $val = $this->RetrieveData('SRN');
+            $msg .= $this->Translate('Serial number') . ': ' . $val . PHP_EOL;
 
-        $msg .= $this->Translate('WLAN') . PHP_EOL;
-        $val = $this->RetrieveData('WFC');
-        if ($val !== false) {
-            $msg .= ' - ' . $this->Translate('SSID') . ': ' . $val . PHP_EOL;
+            $msg .= PHP_EOL;
 
-            $val = (int) $this->RetrieveData('WFS');
-            $msg .= ' - ' . $this->Translate('Status') . ': ' . $this->DecodeWFS($val) . PHP_EOL;
+            $msg .= $this->Translate('WLAN') . PHP_EOL;
+            $val = $this->RetrieveData('WFC');
+            if ($val !== false) {
+                $msg .= ' - ' . $this->Translate('SSID') . ': ' . $val . PHP_EOL;
 
-            if ($val == self::$SYRCONNECT_WLANSTATUS_CONNECTED) {
-                $val = (int) $this->RetrieveData('WFR');
-                $msg .= ' - ' . $this->Translate('Signal strengh') . ': ' . $val . '%' . PHP_EOL;
+                $val = (int) $this->RetrieveData('WFS');
+                $msg .= ' - ' . $this->Translate('Status') . ': ' . $this->WlanState2String($val) . PHP_EOL;
 
-                $val = $this->RetrieveData('WGW');
-                $msg .= ' - ' . $this->Translate('IP') . ': ' . $val . PHP_EOL;
+                if ($val == self::$WLAN_STATE_CONNECTED) {
+                    $val = (int) $this->RetrieveData('WFR');
+                    $msg .= ' - ' . $this->Translate('Signal strengh') . ': ' . $val . '%' . PHP_EOL;
+
+                    $val = $this->RetrieveData('WGW');
+                    $msg .= ' - ' . $this->Translate('IP') . ': ' . $val . PHP_EOL;
+                }
+
+                $val = $this->RetrieveData('MAC1');
+                $msg .= ' - ' . $this->Translate('MAC') . ': ' . $val . PHP_EOL;
+            } else {
+                $msg .= ' - ' . $this->Translate('not configured') . PHP_EOL;
             }
 
-            $val = $this->RetrieveData('MAC1');
+            $msg .= PHP_EOL;
+
+            $msg .= $this->Translate('LAN') . PHP_EOL;
+
+            $val = $this->RetrieveData('EIP');
+            $msg .= ' - ' . $this->Translate('IP') . ': ' . $val . PHP_EOL;
+            $val = $this->RetrieveData('MAC2');
             $msg .= ' - ' . $this->Translate('MAC') . ': ' . $val . PHP_EOL;
-        } else {
-            $msg .= ' - ' . $this->Translate('not configured') . PHP_EOL;
         }
-
-        $msg .= PHP_EOL;
-
-        $msg .= $this->Translate('LAN') . PHP_EOL;
-
-        $val = $this->RetrieveData('EIP');
-        $msg .= ' - ' . $this->Translate('IP') . ': ' . $val . PHP_EOL;
-        $val = $this->RetrieveData('MAC2');
-        $msg .= ' - ' . $this->Translate('MAC') . ': ' . $val . PHP_EOL;
 
         $this->PopupMessage($msg);
-    }
-
-    private function DecodeWFS($val)
-    {
-        $val2txt = [
-            self::$SYRCONNECT_WLANSTATUS_DISCONNECTED => 'nicht verbunden',
-            self::$SYRCONNECT_WLANSTATUS_CONNECTING   => 'is being connected',
-            self::$SYRCONNECT_WLANSTATUS_CONNECTED    => 'verbunden',
-        ];
-
-        if (isset($val2txt[$val])) {
-            $txt = $this->Translate($val2txt[$val]);
-        } else {
-            $msg = 'unknown value "' . $val . '"';
-            $this->SendDebug(__FUNCTION__, $msg, 0);
-            $txt = $val;
-        }
-        return $txt;
     }
 
     private function UpdateStatus()
@@ -345,6 +315,37 @@ class SyrConnect extends IPSModule
         if ($this->CheckStatus() == self::$STATUS_INVALID) {
             $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
             return;
+        }
+
+        if ($this->Use4Ident('VLV')) {
+            $val = (int) $this->RetrieveData('VLV');
+            $this->SendDebug(__FUNCTION__, '... ValveState (VLV)=' . $val, 0);
+            $this->SetValue('ValveState', $val);
+        }
+
+        if ($this->Use4Ident('AB')) {
+            $val = (bool) $this->RetrieveData('AB');
+            $this->SendDebug(__FUNCTION__, '... ValveAction (AB)=' . $this->bool2str($val) == false, 0);
+            $this->SetValue('ValveAction', $val);
+        }
+
+        if ($this->Use4Ident('PRF')) {
+            $val = (int) $this->RetrieveData('PRF');
+            $this->SendDebug(__FUNCTION__, '... CurrentProfile (PRF)=' . $val, 0);
+            $this->SetValue('CurrentProfile', $val);
+        }
+
+        if ($this->Use4Ident('DSV')) {
+            $val = (int) $this->RetrieveData('DSV');
+            $this->SendDebug(__FUNCTION__, '... MicroleakageTestState (DSV)=' . $val, 0);
+            $this->SetValue('MicroleakageTestState', $val);
+        }
+
+        if ($this->Use4Ident('AVO')) {
+            $val = (int) $this->RetrieveData('AVO');
+            $vol = round($val / 1000, 2);
+            $this->SendDebug(__FUNCTION__, '... CurrentWithdrawal (AVO)=' . $vol . ' (' . $val . ')', 0);
+            $this->SetValue('CurrentWithdrawal', $vol);
         }
 
         $this->SendDebug(__FUNCTION__, $this->PrintTimer('UpdateStatus'), 0);
@@ -401,12 +402,12 @@ class SyrConnect extends IPSModule
         $device_type = $this->ReadPropertyInteger('device_type');
 
         switch ($device_type) {
-            case self::$SYRCONNECT_TYPE_TRIODFR_LS:
-            case self::$SYRCONNECT_TYPE_SAFETECH_PLUS:
+            case self::$DEVICE_TYPE_TRIODFR_LS:
+            case self::$DEVICE_TYPE_SAFETECH_PLUS:
                 $device_key = 'trio';
                 break;
-            case self::$SYRCONNECT_TYPE_NEOSOFT_2500:
-            case self::$SYRCONNECT_TYPE_NEOSOFT_5000:
+            case self::$DEVICE_TYPE_NEOSOFT_2500:
+            case self::$DEVICE_TYPE_NEOSOFT_5000:
                 $device_key = 'neosoft';
                 break;
             default:
@@ -522,4 +523,224 @@ class SyrConnect extends IPSModule
         }
         return $header;
     }
+
+    private function Use4Ident($func)
+    {
+        $device_type = $this->ReadPropertyInteger('device_type');
+
+        $r = false;
+
+        if ($device_type == self::$DEVICE_TYPE_TRIODFR_LS) {
+            switch ($func) {
+                case 'AB':		// Absperrung öffnen/schließen	true/false
+                case 'VLV':		// Status der Absperrung
+                case 'PRF':		// Aktuell ausgewähltes Profil
+                case 'DSV':		// Status der Mikroleckage
+                case 'AVO':		// Volumen aktuelle Entnahme in ml
+                case 'BAR':		// Eingangsdruck in mbar	0-16000
+                case 'BUZ':		// Buzzer On/Off bei Alarm	true/false
+                case 'BAT':		// Batteriespannung in 1/100 V	0-1000
+                case 'BAR':		// Eingangsdruck in mbar	0-16000
+                case 'CEL':		// Temperatur in °C	0-1000
+                case 'CND':		// Leitwert in µS/cm	0-5000
+                case 'FLO':		// Aktueller Durchfluss in l/h	0-5000
+                case 'LTV':		// Letztes gezapftes Volumen in Litern
+                case 'SRN':		// Seriennummer des Gerätes
+                case 'VER':		// Firmware Version des Gerätes
+                case 'VOL':		// Kumulatives Volumen in Litern
+                case 'NPS':		// Keine Turbinenimpulse seit.. in s
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+        if ($device_type == self::$DEVICE_TYPE_SAFETECH_PLUS) {
+            switch ($func) {
+                case 'AB':		// Absperrung öffnen/schließen	true/false
+                case 'VLV':		// Status der Absperrung
+                case 'PRF':		// Aktuell ausgewähltes Profil
+                case 'DSV':		// Status der Mikroleckage
+                case 'AVO':		// Volumen aktuelle Entnahme in ml
+                case 'BAR':		// Eingangsdruck in mbar	0-16000
+                case 'BUZ':		// Buzzer On/Off bei Alarm	true/false
+                case 'BAT':		// Batteriespannung in 1/100 V	0-1000
+                case 'BAR':		// Eingangsdruck in mbar	0-16000
+                case 'CEL':		// Temperatur in °C	0-1000
+                case 'CND':		// Leitwert in µS/cm	0-5000
+                case 'FLO':		// Aktueller Durchfluss in l/h	0-5000
+                case 'LTV':		// Letztes gezapftes Volumen in Litern
+                case 'NPS':		// Keine Turbinenimpulse seit.. in s
+                case 'SRN':		// Seriennummer des Gerätes
+                case 'VER':		// Firmware Version des Gerätes
+                case 'VOL':		// Kumulatives Volumen in Litern
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if ($device_type == self::$DEVICE_TYPE_NEOSOFT_2500) {
+            switch ($func) {
+                case 'AVO':		// Volumen aktuelle Entnahme in ml
+                case 'BUZ':		// Buzzer On/Off bei Alarm	true/false
+                case 'FLO':		// Aktueller Durchfluss in l/h	0-5000
+                case 'LTV':		// Letztes gezapftes Volumen in Litern
+                case 'SRN':		// Seriennummer des Gerätes
+                case 'VER':		// Firmware Version des Gerätes
+                case 'VOL':		// Kumulatives Volumen in Litern
+                case 'VPS1':	// Keine Turbinenimpulse Steuerkopf 1 seit.. in s
+                case 'IWH':		// Eingangshärte	1-85	°dH
+                case 'OWH':		// Ausgangshärte	1-85	°dH
+                case 'SS1':		// Salzvorrat	0-40	Wochen
+                case 'SV1':		// Salzmenge	0-40	Kilogramm
+                case 'RE1':		// Reserve Kapazität Flasche 1	0-9999	Liter
+                case 'RE2':		// Reserve Kapazität Flasche 2	0-9999	Liter
+                case 'RG1':		// Regeneration Status 0-2 (0 - keine Regeneration, 1 - Flasche 1 regeneriert, 2 - Flasche 2 regeneriert)
+                case 'RTI':		// Zeit bis Regeneration zu Ende	0-5940	Sekunden
+                case 'SRH':		// ng	Nächste Halbjährliche Wartung		dd.mm.yyyy
+                case 'SRV':		// ng	Nächste Jährliche Wartung		dd.mm.yyyy
+                case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
+                case 'RPD':		// Regenerationsintervall	1-3	Tag
+                case 'RTM':		// Regerationsuhrzeit	0:00-23:59
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if ($device_type == self::$DEVICE_TYPE_NEOSOFT_5000) {
+            switch ($func) {
+                case 'AVO':		// Volumen aktuelle Entnahme in ml
+                case 'BUZ':		// Buzzer On/Off bei Alarm	true/false
+                case 'FLO':		// Aktueller Durchfluss in l/h	0-5000
+                case 'LTV':		// Letztes gezapftes Volumen in Litern
+                case 'SRN':		// Seriennummer des Gerätes
+                case 'VER':		// Firmware Version des Gerätes
+                case 'VOL':		// Kumulatives Volumen in Litern
+                case 'VPS1':	// Keine Turbinenimpulse Steuerkopf 1 seit.. in s
+                case 'VPS2':	// Keine Turbinenimpulse Steuerkopf 2 seit.. in s
+                case 'IWH':		// Eingangshärte	1-85	°dH
+                case 'OWH':		// Ausgangshärte	1-85	°dH
+                case 'SS1':		// Salzvorrat	0-40	Wochen
+                case 'SV1':		// Salzmenge	0-40	Kilogramm
+                case 'RE1':		// Reserve Kapazität Flasche 1	0-9999	Liter
+                case 'RE2':		// Reserve Kapazität Flasche 2	0-9999	Liter
+                case 'RG1':		// Regeneration Status 0-2 (0 - keine Regeneration, 1 - Flasche 1 regeneriert, 2 - Flasche 2 regeneriert)
+                case 'RTI':		// Zeit bis Regeneration zu Ende	0-5940	Sekunden
+                case 'SRH':		// ng	Nächste Halbjährliche Wartung		dd.mm.yyyy
+                case 'SRV':		// ng	Nächste Jährliche Wartung		dd.mm.yyyy
+                case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
+                case 'RPD':		// Regenerationsintervall	1-3	Tag
+                case 'RTM':		// Regerationsuhrzeit	0:00-23:59
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        switch ($func) {
+            case 'WFC':		// WLAN SSID	true
+            case 'WFD':		// WLAN SSID und Key Löschen
+            case 'WFK':		// WLAN Key
+            case 'WFL':		// Stellt eine Lister der Verfügbaren Netzwerke zur Verfügung
+            case 'WFR':		// WLAN Signalstärke in %	1-100
+            case 'WFS':		// WLAN Verbindungsstatus	0-2
+            case 'WGW':		// WLAN IP
+            case 'WIP':		// WLAN Gateway
+            case 'EGW':		// Ethernet IP
+            case 'EIP':		// Ethernet Gateway
+            case 'MAC1':	// MAC-Adresse WLAN Schnittstelle
+            case 'MAC2':	// MAC-Adresse LAN Schnittstelle
+            case 'ALA':		// Abrufen und Quittierung des aktuellen Alarms
+            case 'ALM':		// Abrufen der letzten 8 Alarme
+            case 'WRN':		// Abrufen und Quittierung der aktuellen Warnung
+            case 'ALW':		// Abrufen der letzten 8 Warnungen
+            case 'NOT':		// Abrufen und Quittieren der anliegenden Notification
+            case 'ALN':		// Abrufen der letzten 8 Notification
+                $r = true;
+                break;
+            default:
+                break;
+        }
+
+        $this->SendDebug(__FUNCTION__, 'func=' . $func . ' => ' . $this->bool2str($r), 0);
+        return $r;
+    }
+
+    private function Enable4Ident($func)
+    {
+        $device_type = $this->ReadPropertyInteger('device_type');
+
+        $r = false;
+
+        if ($this->Use4Ident($func) == false) {
+            return $r;
+        }
+
+        if ($device_type == self::$DEVICE_TYPE_TRIODFR_LS) {
+            switch ($func) {
+                case 'AB':		// Absperrung öffnen/schließen
+                case 'PRF':		// Aktuell ausgewähltes Profil
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if ($device_type == self::$DEVICE_TYPE_SAFETECH_PLUS) {
+            switch ($func) {
+                case 'AB':		// Absperrung öffnen/schließen
+                case 'PRF':		// Aktuell ausgewähltes Profil
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if ($device_type == self::$DEVICE_TYPE_NEOSOFT_2500) {
+            switch ($func) {
+                case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
+                case 'RPD':		// Regenerationsintervall	1-3	Tag
+                case 'RTM':		// Regerationsuhrzeit	0:00-23:59
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if ($device_type == self::$DEVICE_TYPE_NEOSOFT_5000) {
+            switch ($func) {
+                case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        switch ($func) {
+            case 'BUZ':		// Buzzer On/Off bei Alarm	true/false
+            case 'WFC':		// WLAN SSID	true
+            case 'WFD':		// WLAN SSID und Key Löschen
+            case 'WFK':		// WLAN Key
+            case 'ALA':		// Quittieren des anliegenden Alarms	255
+            case 'WRN':		// Quittieren der aktuellen Warnung	255
+            case 'NOT':		// Quittieren der anliegenden Notification	255
+                $r = true;
+                break;
+            default:
+                break;
+        }
+
+        $this->SendDebug(__FUNCTION__, 'func=' . $func . ' => ' . $this->bool2str($r), 0);
+        return $r;
+    }
 }
+

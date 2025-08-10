@@ -1,6 +1,42 @@
 {
 	"translations": {
 		"de": {
+			"__variableprofile__": "SyrConnect.ValveAction",
+			"open": "öffnen",
+			"close": "schliessen",
+
+			"__variableprofile__": "SyrConnect.ValveState",
+			"closed": "geschlossen",
+			"closing": "schliesst",
+			"opened": "geöffnet",
+			"opening": "öffnet",
+
+			"__variableprofile__": "SyrConnect.CurrentProfile",
+			"Present": "Anwesend",
+			"Absent": "Abwesend",
+
+			"opions": "DeviceType",
+            "none": "keine",
+            "TrioDFR LS": "TrioDFR LS",
+            "SafeTech +": "SafeTech +",
+            "NeoSoft 2500": "NeoSoft 2500",
+            "NeoSoft 5000": "NeoSoft 5000",
+
+			"__options__": "ValveState",
+			"Unknown valve state": "Unbekannter Ventil-Status",
+
+			"__options__": "WlanState",
+			"not connected": "nicht verbunden",
+			"is being connected": "wird verbunden",
+			"connected": "verbunden",
+			"Unknown wlan state": "Unbekannter WLAN-Status",
+
+			"__options__": "MikroleakageTestState",
+			"not active": "nicht aktiv",
+			"active": "aktiv",
+			"aborted": "abgebrochen",
+			"skipped": "übersprungen",
+			"micro leakage test state": "Unbekannter Microleckage-Teststatus",
 
 			"__status__": "",
 			"Instance is inactive (server error)": "Instanz ist inaktiv (Serverfehler)",
