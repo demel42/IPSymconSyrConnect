@@ -354,10 +354,16 @@ class SyrConnect extends IPSModule
             return;
         }
 
+        $update_interval = '';
+
         if ($this->Use4Ident('VLV')) {
             $val = (int) $this->RetrieveData('VLV');
             $this->SendDebug(__FUNCTION__, '... ValveState (VLV)=' . $val, 0);
             $this->SetValue('ValveState', $val);
+
+            if (in_array($val, [self::$VALVE_STATE_CLOSING, self::$VALVE_STATE_OPENING])) {
+                $update_interval = 5;
+            }
         }
 
         if ($this->Use4Ident('AB')) {
@@ -439,30 +445,36 @@ class SyrConnect extends IPSModule
 
         if ($this->Use4Ident('ALA')) {
             $val = $this->RetrieveData('ALA');
-			$i = hexdec('0x' . $val);
-            $this->SendDebug(__FUNCTION__, '... CurrentAlarm (ALA)=' . $i . ' (' .$val.')', 0);
+            $i = hexdec('0x' . $val);
+            $this->SendDebug(__FUNCTION__, '... CurrentAlarm (ALA)=' . $i . ' (' . $val . ')', 0);
             $this->SetValue('CurrentAlarm', $i);
         }
 
         if ($this->Use4Ident('WRN')) {
             $val = $this->RetrieveData('WRN');
-			$i = hexdec('0x' . $val);
-            $this->SendDebug(__FUNCTION__, '... CurrentWarning (WRN)=' . $i . ' (' .$val.')', 0);
+            $i = hexdec('0x' . $val);
+            $this->SendDebug(__FUNCTION__, '... CurrentWarning (WRN)=' . $i . ' (' . $val . ')', 0);
             $this->SetValue('CurrentWarning', $i);
         }
 
         if ($this->Use4Ident('NOT')) {
             $val = $this->RetrieveData('NOT');
-			$i = hexdec('0x' . $val);
-            $this->SendDebug(__FUNCTION__, '... CurrentNotification (NOT)=' . $i . ' (' .$val.')', 0);
+            $i = hexdec('0x' . $val);
+            $this->SendDebug(__FUNCTION__, '... CurrentNotification (NOT)=' . $i . ' (' . $val . ')', 0);
             $this->SetValue('CurrentNotification', $i);
         }
 
-        $this->SendDebug(__FUNCTION__, $this->PrintTimer('UpdateStatus'), 0);
+        if ($update_interval > 0) {
+            $this->SetUpdateInterval($update_interval);
+        } else {
+            $this->SetUpdateInterval();
+        }
     }
 
     private function LocalRequestAction($ident, $value)
     {
+        $device_type = $this->ReadPropertyInteger('device_type');
+
         $r = true;
         switch ($ident) {
             case 'TestAccess':
@@ -496,6 +508,66 @@ class SyrConnect extends IPSModule
 
         $r = false;
         switch ($ident) {
+            case 'ValveAction': // Absperrung öffnen/schließen
+                if ($this->Enable4Ident('AB')) {
+                    $r = $this->SwitchValve((bool) $value);
+                    $this->SendDebug(__FUNCTION__, $ident . '=' . $value . ' => ret=' . $this->bool2str($r), 0);
+                }
+                break;
+            case 'CurrentProfile': // Profil setzen
+                if ($this->Enable4Ident('PRF')) {
+                    $r = $this->SetCurrentProfile((int) $value);
+                    $this->SendDebug(__FUNCTION__, $ident . '=' . $value . ' => ret=' . $this->bool2str($r), 0);
+                    if ($r) {
+                        $this->SetUpdateInterval(1);
+                    }
+                }
+                break;
+            case 'Buzzer': // Absperrung öffnen/schließen
+                if ($this->Enable4Ident('BUZ')) {
+                    $r = $this->SwitchBuzzer((bool) $value);
+                    $this->SendDebug(__FUNCTION__, $ident . '=' . $value . ' => ret=' . $this->bool2str($r), 0);
+                    if ($r) {
+                        $this->SetUpdateInterval(1);
+                    }
+                }
+                break;
+            case 'CurrentAlarm': // aktuellen Alarm quittieren
+                if ($this->Enable4Ident('ALA')) {
+                    $r = $this->ClearCurrentAlarm();
+                    $this->SendDebug(__FUNCTION__, $ident . '=' . $value . ' => ret=' . $this->bool2str($r), 0);
+                    if ($r) {
+                        $this->SetUpdateInterval(1);
+                    }
+                }
+                break;
+            case 'CurrentWarning': // aktuellen Warnung quittieren
+                if ($this->Enable4Ident('WRN')) {
+                    $r = $this->ClearCurrentWarning();
+                    $this->SendDebug(__FUNCTION__, $ident . '=' . $value . ' => ret=' . $this->bool2str($r), 0);
+                    if ($r) {
+                        $this->SetUpdateInterval(1);
+                    }
+                }
+                break;
+            case 'CurrentNotification': // aktuelle Nachricht quittieren
+                if ($this->Enable4Ident('NOT')) {
+                    $r = $this->ClearCurrentNotіfication();
+                    $this->SendDebug(__FUNCTION__, $ident . '=' . $value . ' => ret=' . $this->bool2str($r), 0);
+                    if ($r) {
+                        $this->SetUpdateInterval(1);
+                    }
+                }
+                break;
+                /*
+                case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
+                case 'RPD':		// Regenerationsintervall	1-3	Tag
+                case 'RTM':		// Regerationsuhrzeit	0:00-23:59
+                case 'WFC':		// WLAN SSID	true
+                case 'WFD':		// WLAN SSID und Key Löschen
+                case 'WFK':		// WLAN Key
+                 */
+                break;
             default:
                 $this->SendDebug(__FUNCTION__, 'invalid ident ' . $ident, 0);
                 break;
@@ -504,6 +576,105 @@ class SyrConnect extends IPSModule
             $this->SetValue($ident, $value);
         }
     }
+
+    public function SwitchValve(bool $val)
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        if ($this->Enable4Ident('AB') == false) {
+            return false;
+        }
+
+        $r = $this->TransmitData('AB', $this->bool2str($val));
+        return $r;
+    }
+
+    public function SetCurrentProfile(int $val)
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        if ($this->Enable4Ident('PRF') == false) {
+            return false;
+        }
+
+        $r = $this->TransmitData('PRF', $val);
+        return $r;
+    }
+
+    public function SwitchBuzzer(bool $val)
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        if ($this->Enable4Ident('BUZ') == false) {
+            return false;
+        }
+
+        $r = $this->TransmitData('BUZ', $this->bool2str($val));
+        return $r;
+    }
+
+    public function ClearCurrentAlarm()
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        if ($this->Enable4Ident('ALM') == false) {
+            return false;
+        }
+
+        $r = $this->TransmitData('ALM', 255);
+        return $r;
+    }
+
+    public function ClearCurrentWarning()
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        if ($this->Enable4Ident('WRN') == false) {
+            return false;
+        }
+
+        $r = $this->TransmitData('WRN', 255);
+        return $r;
+    }
+
+    public function ClearCurrentNotification()
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        if ($this->Enable4Ident('NOT') == false) {
+            return false;
+        }
+
+        $r = $this->TransmitData('NOT', 255);
+        return $r;
+    }
+
+    /*
+        case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
+        case 'RPD':		// Regenerationsintervall	1-3	Tag
+        case 'RTM':		// Regerationsuhrzeit	0:00-23:59
+        case 'WFC':		// WLAN SSID	true
+        case 'WFD':		// WLAN SSID und Key Löschen
+        case 'WFK':		// WLAN Key
+     */
 
     private function RetrieveData($func)
     {
@@ -527,8 +698,9 @@ class SyrConnect extends IPSModule
 
         $url = 'http://' . $host . ':' . $port . '/' . $device_key . '/get/' . strtolower($func);
         $body = $this->do_HttpRequest($url);
-		if ($body == false)
+        if ($body == false) {
             return false;
+        }
 
         $jbody = @json_decode($body, true);
         if ($jbody == false) {
@@ -543,13 +715,54 @@ class SyrConnect extends IPSModule
         }
 
         $ret = $jbody[$key];
-        switch ($func) {
-            default:
-                break;
-        }
 
         $this->SendDebug(__FUNCTION__, 'func=' . $func . ', value=' . $ret, 0);
         return $ret;
+    }
+
+    private function TransmitData($func, $val)
+    {
+        $host = $this->ReadPropertyString('host');
+        $port = $this->ReadPropertyInteger('port');
+        $device_type = $this->ReadPropertyInteger('device_type');
+
+        switch ($device_type) {
+            case self::$DEVICE_TYPE_TRIODFR_LS:
+            case self::$DEVICE_TYPE_SAFETECH_PLUS:
+                $device_key = 'trio';
+                break;
+            case self::$DEVICE_TYPE_NEOSOFT_2500:
+            case self::$DEVICE_TYPE_NEOSOFT_5000:
+                $device_key = 'neosoft';
+                break;
+            default:
+                $this->SendDebug(__FUNCTION__, 'unknown device_type=' . $device_type . ' => skip', 0);
+                return false;
+        }
+
+        $url = 'http://' . $host . ':' . $port . '/' . $device_key . '/set/' . strtolower($func) . '/' . $val;
+        $body = $this->do_HttpRequest($url);
+        if ($body == false) {
+            return false;
+        }
+
+        $jbody = @json_decode($body, true);
+        if ($jbody == false) {
+            $this->SendDebug(__FUNCTION__, 'json_last_error_msg=' . json_last_error_msg() . ', jbody=' . print_r($jbody, true), 0);
+            return false;
+        }
+
+        $key = 'set' . $func . $val;
+        if (isset($jbody[$key]) == false) {
+            $this->SendDebug(__FUNCTION__, 'missing value, jbody=' . print_r($jbody, true), 0);
+            return false;
+        }
+
+        $ret = $jbody[$key];
+
+        $this->SendDebug(__FUNCTION__, 'func=' . $func . ', val=' . $val . ' => ' . $ret, 0);
+
+        return $ret == 'OK';
     }
 
     private function do_HttpRequest($url)
@@ -771,8 +984,8 @@ class SyrConnect extends IPSModule
             case 'ALM':		// Abrufen der letzten 8 Alarme
             case 'WRN':		// Abrufen und Quittierung der aktuellen Warnung
             case 'ALW':		// Abrufen der letzten 8 Warnungen
-            case 'NOT':		// Abrufen und Quittieren der anliegenden Notification
-            case 'ALN':		// Abrufen der letzten 8 Notification
+            case 'NOT':		// Abrufen und Quittieren der aktuellen Benachrichtigung
+            case 'ALN':		// Abrufen der letzten 8 Benachrichtigungen
                 $r = true;
                 break;
             default:
@@ -807,7 +1020,7 @@ class SyrConnect extends IPSModule
         if ($device_type == self::$DEVICE_TYPE_SAFETECH_PLUS) {
             switch ($func) {
                 case 'AB':		// Absperrung öffnen/schließen
-                case 'PRF':		// Aktuell ausgewähltes Profil
+                case 'PRF':		// Profil setzen
                     $r = true;
                     break;
                 default:
@@ -844,7 +1057,7 @@ class SyrConnect extends IPSModule
             case 'WFK':		// WLAN Key
             case 'ALA':		// Quittieren des anliegenden Alarms	255
             case 'WRN':		// Quittieren der aktuellen Warnung	255
-            case 'NOT':		// Quittieren der anliegenden Notification	255
+            case 'NOT':		// Quittieren der anliegenden Benachrichtigung	255
                 $r = true;
                 break;
             default:
@@ -855,4 +1068,3 @@ class SyrConnect extends IPSModule
         return $r;
     }
 }
-
