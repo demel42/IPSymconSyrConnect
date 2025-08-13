@@ -123,7 +123,7 @@ class SyrConnect extends IPSModule
 
         $u = $this->Use4Ident('PRF');
         $e = $this->Enable4Ident('PRF');
-        $this->MaintainVariable('CurrentProfile', $this->Translate('Current profile'), VARIABLETYPE_BOOLEAN, 'SyrConnect.CurrentProfile', $vpos++, $u);
+        $this->MaintainVariable('CurrentProfile', $this->Translate('Current profile'), VARIABLETYPE_INTEGER, 'SyrConnect.CurrentProfile', $vpos++, $u);
         if ($u) {
             $this->MaintainAction('CurrentProfile', $e);
         }
@@ -132,7 +132,44 @@ class SyrConnect extends IPSModule
         $this->MaintainVariable('MicroleakageTestState', $this->Translate('Micro leakage test'), VARIABLETYPE_INTEGER, 'SyrConnect.MicroleakageTestState', $vpos++, $u);
 
         $u = $this->Use4Ident('AVO');
-        $this->MaintainVariable('CurrentWithdrawal', $this->Translate('Current withdrawal'), VARIABLETYPE_INTEGER, 'SyrConnect.Volumne', $vpos++, $u);
+        $this->MaintainVariable('CurrentWithdrawal', $this->Translate('Current withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
+
+        $u = $this->Use4Ident('BAR');
+        $this->MaintainVariable('InputPressure', $this->Translate('Input pressure'), VARIABLETYPE_FLOAT, 'SyrConnect.Pressure', $vpos++, $u);
+
+        $u = $this->Use4Ident('BUZ');
+        $e = $this->Enable4Ident('BUZ');
+        $this->MaintainVariable('Buzzer', $this->Translate('Buzzer'), VARIABLETYPE_BOOLEAN, 'SyrConnect.Buzzer', $vpos++, $u);
+        if ($u) {
+            $this->MaintainAction('Buzzer', $e);
+        }
+
+        $u = $this->Use4Ident('BAT');
+        $this->MaintainVariable('BatteryVoltage', $this->Translate('Battery voltage'), VARIABLETYPE_FLOAT, 'SyrConnect.Voltage', $vpos++, $u);
+
+        $u = $this->Use4Ident('CEL');
+        $this->MaintainVariable('Temperature', $this->Translate('Temperature'), VARIABLETYPE_FLOAT, 'SyrConnect.Temperature', $vpos++, $u);
+
+        $u = $this->Use4Ident('CND');
+        $this->MaintainVariable('Conductivity', $this->Translate('Conductivity'), VARIABLETYPE_INTEGER, 'SyrConnect.Conductivity', $vpos++, $u);
+
+        $u = $this->Use4Ident('FLO');
+        $this->MaintainVariable('CurrentFlow', $this->Translate('Current flow'), VARIABLETYPE_INTEGER, 'SyrConnect.Flow', $vpos++, $u);
+
+        $u = $this->Use4Ident('LTV');
+        $this->MaintainVariable('LastWithdrawal', $this->Translate('Last withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
+
+        $u = $this->Use4Ident('VOL');
+        $this->MaintainVariable('CumulativeWithdrawal', $this->Translate('Cumulative withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
+
+        $u = $this->Use4Ident('ALA');
+        $this->MaintainVariable('CurrentAlarm', $this->Translate('Current alarm'), VARIABLETYPE_INTEGER, 'SyrConnect.Alarm', $vpos++, $u);
+
+        $u = $this->Use4Ident('WRN');
+        $this->MaintainVariable('CurrentWarning', $this->Translate('Current warning'), VARIABLETYPE_INTEGER, 'SyrConnect.Warning', $vpos++, $u);
+
+        $u = $this->Use4Ident('NOT');
+        $this->MaintainVariable('CurrentNotification', $this->Translate('Current notification'), VARIABLETYPE_INTEGER, 'SyrConnect.Notification', $vpos++, $u);
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
@@ -325,8 +362,9 @@ class SyrConnect extends IPSModule
 
         if ($this->Use4Ident('AB')) {
             $val = (bool) $this->RetrieveData('AB');
-            $this->SendDebug(__FUNCTION__, '... ValveAction (AB)=' . $this->bool2str($val) == false, 0);
-            $this->SetValue('ValveAction', $val);
+            $b = $val == false;
+            $this->SendDebug(__FUNCTION__, '... ValveAction (AB)=' . $this->bool2str($b) . ' (' . $this->bool2str($val) . ')', 0);
+            $this->SetValue('ValveAction', $b);
         }
 
         if ($this->Use4Ident('PRF')) {
@@ -343,9 +381,81 @@ class SyrConnect extends IPSModule
 
         if ($this->Use4Ident('AVO')) {
             $val = (int) $this->RetrieveData('AVO');
-            $vol = round($val / 1000, 2);
-            $this->SendDebug(__FUNCTION__, '... CurrentWithdrawal (AVO)=' . $vol . ' (' . $val . ')', 0);
-            $this->SetValue('CurrentWithdrawal', $vol);
+            $f = round($val / 1000, 2);
+            $this->SendDebug(__FUNCTION__, '... CurrentWithdrawal (AVO)=' . $f . ' (' . $val . ')', 0);
+            $this->SetValue('CurrentWithdrawal', $f);
+        }
+
+        if ($this->Use4Ident('BAR')) {
+            $val = (int) $this->RetrieveData('BAR');
+            $f = round($val / 1000, 1);
+            $this->SendDebug(__FUNCTION__, '... InputPressure (BAR)=' . $f . ' (' . $val . ')', 0);
+            $this->SetValue('InputPressure', $f);
+        }
+
+        if ($this->Use4Ident('BUZ')) {
+            $val = (bool) $this->RetrieveData('BUZ');
+            $this->SendDebug(__FUNCTION__, '... Buzzer (BUZ)=' . $this->bool2str($val), 0);
+            $this->SetValue('Buzzer', $val);
+        }
+
+        if ($this->Use4Ident('BAT')) {
+            $val = (int) $this->RetrieveData('BAT');
+            $f = round($val / 100, 2);
+            $this->SendDebug(__FUNCTION__, '... BatteryVoltage (BAT)=' . $f . ' (' . $val . ')', 0);
+            $this->SetValue('BatteryVoltage', $f);
+        }
+
+        if ($this->Use4Ident('CEL')) {
+            $val = (int) $this->RetrieveData('CEL');
+            $f = round($val / 10, 1);
+            $this->SendDebug(__FUNCTION__, '... Temperature (CEL)=' . $f . ' (' . $val . ')', 0);
+            $this->SetValue('Temperature', $f);
+        }
+
+        if ($this->Use4Ident('CND')) {
+            $val = (int) $this->RetrieveData('CND');
+            $this->SendDebug(__FUNCTION__, '... Conductivity (CND)=' . $val, 0);
+            $this->SetValue('Conductivity', $val);
+        }
+
+        if ($this->Use4Ident('FLO')) {
+            $val = (int) $this->RetrieveData('FLO');
+            $this->SendDebug(__FUNCTION__, '... CurrentFlow (FLO)=' . $val, 0);
+            $this->SetValue('CurrentFlow', $val);
+        }
+
+        if ($this->Use4Ident('LTV')) {
+            $val = (float) $this->RetrieveData('LTV');
+            $this->SendDebug(__FUNCTION__, '... LastWithdrawal (LTV)=' . $val, 0);
+            $this->SetValue('LastWithdrawal', $val);
+        }
+
+        if ($this->Use4Ident('VOL')) {
+            $val = (float) $this->RetrieveData('VOL');
+            $this->SendDebug(__FUNCTION__, '... CumulativeWithdrawal (VOL)=' . $val, 0);
+            $this->SetValue('CumulativeWithdrawal', $val);
+        }
+
+        if ($this->Use4Ident('ALA')) {
+            $val = $this->RetrieveData('ALA');
+			$i = hexdec('0x' . $val);
+            $this->SendDebug(__FUNCTION__, '... CurrentAlarm (ALA)=' . $i . ' (' .$val.')', 0);
+            $this->SetValue('CurrentAlarm', $i);
+        }
+
+        if ($this->Use4Ident('WRN')) {
+            $val = $this->RetrieveData('WRN');
+			$i = hexdec('0x' . $val);
+            $this->SendDebug(__FUNCTION__, '... CurrentWarning (WRN)=' . $i . ' (' .$val.')', 0);
+            $this->SetValue('CurrentWarning', $i);
+        }
+
+        if ($this->Use4Ident('NOT')) {
+            $val = $this->RetrieveData('NOT');
+			$i = hexdec('0x' . $val);
+            $this->SendDebug(__FUNCTION__, '... CurrentNotification (NOT)=' . $i . ' (' .$val.')', 0);
+            $this->SetValue('CurrentNotification', $i);
         }
 
         $this->SendDebug(__FUNCTION__, $this->PrintTimer('UpdateStatus'), 0);
@@ -417,6 +527,8 @@ class SyrConnect extends IPSModule
 
         $url = 'http://' . $host . ':' . $port . '/' . $device_key . '/get/' . strtolower($func);
         $body = $this->do_HttpRequest($url);
+		if ($body == false)
+            return false;
 
         $jbody = @json_decode($body, true);
         if ($jbody == false) {
@@ -436,7 +548,7 @@ class SyrConnect extends IPSModule
                 break;
         }
 
-        $this->SendDebug(__FUNCTION__, 'value=' . $ret, 0);
+        $this->SendDebug(__FUNCTION__, 'func=' . $func . ', value=' . $ret, 0);
         return $ret;
     }
 
@@ -480,8 +592,8 @@ class SyrConnect extends IPSModule
             $header_size = $curl_info['header_size'];
             $head = substr($response, 0, $header_size);
             $body = substr($response, $header_size);
-            $this->SendDebug(__FUNCTION__, ' => head=' . $head, 0);
-            $this->SendDebug(__FUNCTION__, ' => body=' . $body, 0);
+            // $this->SendDebug(__FUNCTION__, ' => head=' . $head, 0);
+            // $this->SendDebug(__FUNCTION__, ' => body=' . $body, 0);
 
             if ($httpcode != 200) {
                 if ($httpcode >= 500 && $httpcode <= 599) {
@@ -667,7 +779,7 @@ class SyrConnect extends IPSModule
                 break;
         }
 
-        $this->SendDebug(__FUNCTION__, 'func=' . $func . ' => ' . $this->bool2str($r), 0);
+        // $this->SendDebug(__FUNCTION__, 'func=' . $func . ' => ' . $this->bool2str($r), 0);
         return $r;
     }
 
@@ -739,7 +851,7 @@ class SyrConnect extends IPSModule
                 break;
         }
 
-        $this->SendDebug(__FUNCTION__, 'func=' . $func . ' => ' . $this->bool2str($r), 0);
+        // $this->SendDebug(__FUNCTION__, 'func=' . $func . ' => ' . $this->bool2str($r), 0);
         return $r;
     }
 }
