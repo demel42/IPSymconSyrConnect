@@ -139,7 +139,7 @@ class SyrConnect extends IPSModule
 
         $u = $this->Use4Ident('BUZ');
         $e = $this->Enable4Ident('BUZ');
-        $this->MaintainVariable('Buzzer', $this->Translate('Buzzer'), VARIABLETYPE_BOOLEAN, 'SyrConnect.Buzzer', $vpos++, $u);
+        $this->MaintainVariable('Buzzer', $this->Translate('Audible alarm'), VARIABLETYPE_BOOLEAN, 'SyrConnect.Buzzer', $vpos++, $u);
         if ($u) {
             $this->MaintainAction('Buzzer', $e);
         }

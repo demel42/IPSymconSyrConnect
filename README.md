@@ -66,8 +66,9 @@ Es werden folgende Variablenprofile angelegt:
 - Nachrichten:
 
 ### Quellen
+- API-Dokumentation: https://iotsyrpublicapi.z1.web.core.windows.net
 
 ## 7. Versions-Historie
 
-- 0.9 @ 13.08.2025 15:53
+- 1.0 @ 14.08.2025 10:34
   - Initiale Version
