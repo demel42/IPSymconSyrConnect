@@ -112,7 +112,7 @@ class SyrConnect extends IPSModule
         $vpos = 1;
 
         $u = $this->Use4Ident('VLV');
-        $this->MaintainVariable('ValveState', $this->Translate('Shut-off valve'), VARIABLETYPE_INTEGER, 'SyrConnect.ValveState', $vpos++, $u);
+        $this->MaintainVariable('ValveState', $this->Translate('Shut-off valve status'), VARIABLETYPE_INTEGER, 'SyrConnect.ValveState', $vpos++, $u);
 
         $u = $this->Use4Ident('AB');
         $e = $this->Enable4Ident('AB');
@@ -123,9 +123,9 @@ class SyrConnect extends IPSModule
 
         $u = $this->Use4Ident('PRF');
         $e = $this->Enable4Ident('PRF');
-        $this->MaintainVariable('CurrentProfile', $this->Translate('Current profile'), VARIABLETYPE_INTEGER, 'SyrConnect.CurrentProfile', $vpos++, $u);
+        $this->MaintainVariable('ActiveProfile', $this->Translate('Active profile'), VARIABLETYPE_INTEGER, 'SyrConnect.ActiveProfile', $vpos++, $u);
         if ($u) {
-            $this->MaintainAction('CurrentProfile', $e);
+            $this->MaintainAction('ActiveProfile', $e);
         }
 
         $u = $this->Use4Ident('DSV');
@@ -324,8 +324,11 @@ class SyrConnect extends IPSModule
                     $val = (int) $this->RetrieveData('WFR');
                     $msg .= ' - ' . $this->Translate('Signal strengh') . ': ' . $val . '%' . PHP_EOL;
 
-                    $val = $this->RetrieveData('WGW');
+                    $val = $this->RetrieveData('WIP');
                     $msg .= ' - ' . $this->Translate('IP') . ': ' . $val . PHP_EOL;
+
+                    $val = $this->RetrieveData('WGW');
+                    $msg .= ' - ' . $this->Translate('Gateway') . ': ' . $val . PHP_EOL;
                 }
 
                 $val = $this->RetrieveData('MAC1');
@@ -340,6 +343,10 @@ class SyrConnect extends IPSModule
 
             $val = $this->RetrieveData('EIP');
             $msg .= ' - ' . $this->Translate('IP') . ': ' . $val . PHP_EOL;
+
+            $val = $this->RetrieveData('EGW');
+            $msg .= ' - ' . $this->Translate('Gateway') . ': ' . $val . PHP_EOL;
+
             $val = $this->RetrieveData('MAC2');
             $msg .= ' - ' . $this->Translate('MAC') . ': ' . $val . PHP_EOL;
         }
@@ -375,8 +382,8 @@ class SyrConnect extends IPSModule
 
         if ($this->Use4Ident('PRF')) {
             $val = (int) $this->RetrieveData('PRF');
-            $this->SendDebug(__FUNCTION__, '... CurrentProfile (PRF)=' . $val, 0);
-            $this->SetValue('CurrentProfile', $val);
+            $this->SendDebug(__FUNCTION__, '... ActiveProfile (PRF)=' . $val, 0);
+            $this->SetValue('ActiveProfile', $val);
         }
 
         if ($this->Use4Ident('DSV')) {
@@ -514,9 +521,9 @@ class SyrConnect extends IPSModule
                     $this->SendDebug(__FUNCTION__, $ident . '=' . $value . ' => ret=' . $this->bool2str($r), 0);
                 }
                 break;
-            case 'CurrentProfile': // Profil setzen
+            case 'ActiveProfile': // Profil setzen
                 if ($this->Enable4Ident('PRF')) {
-                    $r = $this->SetCurrentProfile((int) $value);
+                    $r = $this->SetActiveProfile((int) $value);
                     $this->SendDebug(__FUNCTION__, $ident . '=' . $value . ' => ret=' . $this->bool2str($r), 0);
                     if ($r) {
                         $this->SetUpdateInterval(1);
@@ -592,7 +599,7 @@ class SyrConnect extends IPSModule
         return $r;
     }
 
-    public function SetCurrentProfile(int $val)
+    public function SetActiveProfile(int $val)
     {
         if ($this->CheckStatus() == self::$STATUS_INVALID) {
             $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);

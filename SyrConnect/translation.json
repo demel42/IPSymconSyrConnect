@@ -18,9 +18,9 @@
 			"Seconds": "Sekunden",
 
 			"__variables__": "",
-			"Shut-off valve": "Absperrventil",
+			"Shut-off valve status": "Absperrventil-Status",
 			"Shut-off valve action": "Absperrventil-Aktion",
-			"Current profile": "Aktuelles Profil",
+			"Active profile": "Aktives Profil",
 			"Micro leakage test": "Mikroleckage-Test",
 			"Current withdrawal": "Aktuelle Entnahme",
 			"Input pressure": "Eingangsdruck",
@@ -31,9 +31,9 @@
 			"Current flow": "Aktueller Durchfluss",
 			"Last withdrawal": "Letzte Entnahme",
 			"Cumulative withdrawal": "Kumulierte Entnahme",
-			"Current alarm": "Alarm",
-			"Current warning": "Warnung",
-			"Current notification": "Meldung",
+			"Current alarm": "Aktueller Alarm",
+			"Current warning": "Aktuelle Warnung",
+			"Current notification": "Aktuelle Meldung",
 
 			"__actions__": "",
 			"Test access": "Zugriff prüfen",
@@ -50,6 +50,7 @@
 			"Status": "Status",
 			"Signal strengh": "Signalstärke",
 			"IP": "IP",
+			"Gateway": "Gateway",
 			"MAC": "MAC",
 
 			"__end__": ""

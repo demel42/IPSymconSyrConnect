@@ -89,7 +89,7 @@ trait SyrConnectLocalLib
             ['Wert' => 1, 'Name' => $this->Translate('Present'), 'Farbe' => -1],
             ['Wert' => 2, 'Name' => $this->Translate('Absent'), 'Farbe' => -1],
         ];
-        $this->CreateVarProfile('SyrConnect.CurrentProfile', VARIABLETYPE_INTEGER, '', 1, 8, 0, 0, '', $associations, $reInstall);
+        $this->CreateVarProfile('SyrConnect.ActiveProfile', VARIABLETYPE_INTEGER, '', 1, 8, 0, 0, '', $associations, $reInstall);
 
         $associations = [
             ['Wert' => self::$MICROLEAKAGE_TEST_INACTIVE, 'Name' => $this->Translate('not active'), 'Farbe' => -1],
