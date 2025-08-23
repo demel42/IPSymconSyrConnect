@@ -15,10 +15,6 @@
 			"off": "aus",
 			"on": "ein",
 
-			"__variableprofile__": "SyrConnect.CurrentProfile",
-			"Present": "Anwesend",
-			"Absent": "Abwesend",
-
 			"__variableprofile__": "SyrConnect.Alarm",
 			"Limit switch": "Endschalter",
 			"Motor current": "Motorstrom",

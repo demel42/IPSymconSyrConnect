@@ -16,9 +16,16 @@
 
 ## 1. Funktionsumfang
 
+Anschluss der Geräte der Firma *Syr* der Modellreihe *Connect* über die [öffentliche API](https://iotsyrpublicapi.z1.web.core.windows.net/#einleitung) im lokalen Netzwerk.
+
+Grundsätzlich werden alle dort aufgeführten Modelle unterstützt; derzeit ist nur das *SafeTech +* ausprogrammiert. Die anderen, in dieser Dokumentation aufgeführten, Modelle, bitte an den Autor wenden.
+
+Es werden alle relevanten Werte ausgelesen und die notwendigen Steuerungen abgebildet; Parametrierung etc. muss über die Hersteller-eigenen Methoden vorgenommen werden.
+
 ## 2. Voraussetzungen
 
 - IP-Symcon ab Version 6.0
+- ein ensprechendes, im lokalen Netzwerk eingebundenes, Gerät
 
 ## 3. Installation
 
@@ -33,6 +40,25 @@ Alternativ kann das Modul über [Module Control](https://www.symcon.de/service/d
 
 alle Funktionen sind über _RequestAction_ der jew. Variablen ansteuerbar
 
+`SyrConnect_SwitchValve(int $InstanzID, bool $val)`<br>
+Schaltet das Hauptventil (*true* = offen, *false* = geschlossen)
+
+`SyrConnect_SetActiveProfile(int $InstanzID, int $val)`<br>
+Setzt das aktive Profil. Es gibt ein Variablenprofil *SyrConnect.Profiles_\<InstanceID\>* in dem die im Gerät konfigurierten Profile hinterlegt werden müssen.
+
+`SyrConnect_SwitchBuzzer(int $InstanzID, bool $val)`<br>
+Aktiviert/Deaktiviert den Alarmsummer
+
+`SyrConnect_ClearCurrentAlarm(int $InstanzID)`<br>
+Löscht den aktuellen Alarm
+
+`SyrConnect_ClearCurrentWarning(int $InstanzID)`<br>
+Löscht die aktuelle Warnung
+
+`SyrConnect_ClearCurrentNotification(int $InstanzID)`<br>
+Löscht die aktuelle Meldung
+
+
 ## 5. Konfiguration
 
 ### SyrConnect
@@ -43,19 +69,46 @@ alle Funktionen sind über _RequestAction_ der jew. Variablen ansteuerbar
 | :------------------------ | :------  | :----------- | :----------- |
 | Instanz deaktivieren      | boolean  | false        | Instanz temporär deaktivieren |
 |                           |          |              | |
+| Host                      | string   |              | Hostname/IP des Gerätes |
+|                           |          |              | |
+| Gerätetyp                 | int      | 0            | Derzeit nur (0=kein, 1=SafeTech+) |
+|                           |          |              | |
+| Aktualisierungsintervall  | int      | 60           | Intervall in Sekunden |
+|                           |          |              | |
 
 #### Aktionen
 
 | Bezeichnung                | Beschreibung |
 | :------------------------- | :----------- |
+|                            | |
+| Zustand prüfen             | Basisdaten des Geräts zur Überprüfung abrufen und darstellen |
+| Aktualisiere Status        | Daten manuell abrufen |
+|                            | |
 
 ### Variablenprofile
 
 Es werden folgende Variablenprofile angelegt:
 * Boolean<br>
+SyrConnect.Buzzer,
+SyrConnect.ValveAction
+
 * Integer<br>
+SyrConnect.Alarm,
+SyrConnect.Conductivity,
+SyrConnect.Flow,
+SyrConnect.Hardness,
+SyrConnect.MicroleakageTestState,
+SyrConnect.Notification,
+SyrConnect.Profiles_\<InstanceID\>
+SyrConnect.Seconds,
+SyrConnect.ValveState,
+SyrConnect.Warning
+
 * Float<br>
-* String<br>
+SyrConnect.Pressure,
+SyrConnect.Temperature,
+SyrConnect.Voltage,
+SyrConnect.Volume
 
 ## 6. Anhang
 
@@ -70,5 +123,5 @@ Es werden folgende Variablenprofile angelegt:
 
 ## 7. Versions-Historie
 
-- 1.0 @ 18.08.2025 07:56
+- 1.0 @ 23.08.2025 10:35
   - Initiale Version

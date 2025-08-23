@@ -17,6 +17,10 @@
 			"Update interval": "Aktualisierungsintervall",
 			"Seconds": "Sekunden",
 
+			"__variableprofile__": "SyrConnect.Profiles",
+			"Present": "Anwesend",
+			"Absent": "Abwesend",
+
 			"__variables__": "",
 			"Shut-off valve status": "Absperrventil-Status",
 			"Shut-off valve action": "Absperrventil-Aktion",

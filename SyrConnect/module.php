@@ -10,11 +10,15 @@ class SyrConnect extends IPSModule
     use SyrConnect\StubsCommonLib;
     use SyrConnectLocalLib;
 
+    private $VarProf_Profiles;
+
     public function __construct(string $InstanceID)
     {
         parent::__construct($InstanceID);
 
         $this->CommonConstruct(__DIR__);
+
+        $this->VarProf_Profiles = 'SyrConnect.Profiles_' . $this->InstanceID;
     }
 
     public function __destruct()
@@ -40,9 +44,30 @@ class SyrConnect extends IPSModule
 
         $this->InstallVarProfiles(false);
 
+        $associations = [
+            ['Wert' => 1, 'Name' => $this->Translate('Present'), 'Farbe' => -1],
+            ['Wert' => 2, 'Name' => $this->Translate('Absent'), 'Farbe' => -1],
+        ];
+        $this->CreateVarProfile($this->VarProf_Profiles, VARIABLETYPE_INTEGER, '', 1, 8, 0, 0, '', $associations, false);
+
         $this->RegisterTimer('UpdateStatus', 0, 'IPS_RequestAction(' . $this->InstanceID . ', "UpdateStatus", "");');
 
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
+    }
+
+    public function Destroy()
+    {
+        if (IPS_InstanceExists($this->InstanceID) == false) {
+            $idents = [
+                $this->VarProf_Profiles,
+            ];
+            foreach ($idents as $ident) {
+                if (IPS_VariableProfileExists($ident)) {
+                    IPS_DeleteVariableProfile($ident);
+                }
+            }
+        }
+        parent::Destroy();
     }
 
     public function MessageSink($timestamp, $senderID, $message, $data)
@@ -123,19 +148,13 @@ class SyrConnect extends IPSModule
 
         $u = $this->Use4Ident('PRF');
         $e = $this->Enable4Ident('PRF');
-        $this->MaintainVariable('ActiveProfile', $this->Translate('Active profile'), VARIABLETYPE_INTEGER, 'SyrConnect.ActiveProfile', $vpos++, $u);
+        $this->MaintainVariable('ActiveProfile', $this->Translate('Active profile'), VARIABLETYPE_INTEGER, $this->VarProf_Profiles, $vpos++, $u);
         if ($u) {
             $this->MaintainAction('ActiveProfile', $e);
         }
 
         $u = $this->Use4Ident('DSV');
         $this->MaintainVariable('MicroleakageTestState', $this->Translate('Micro leakage test'), VARIABLETYPE_INTEGER, 'SyrConnect.MicroleakageTestState', $vpos++, $u);
-
-        $u = $this->Use4Ident('AVO');
-        $this->MaintainVariable('CurrentWithdrawal', $this->Translate('Current withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
-
-        $u = $this->Use4Ident('BAR');
-        $this->MaintainVariable('InputPressure', $this->Translate('Input pressure'), VARIABLETYPE_FLOAT, 'SyrConnect.Pressure', $vpos++, $u);
 
         $u = $this->Use4Ident('BUZ');
         $e = $this->Enable4Ident('BUZ');
@@ -153,8 +172,14 @@ class SyrConnect extends IPSModule
         $u = $this->Use4Ident('CND');
         $this->MaintainVariable('Conductivity', $this->Translate('Conductivity'), VARIABLETYPE_INTEGER, 'SyrConnect.Conductivity', $vpos++, $u);
 
+        $u = $this->Use4Ident('BAR');
+        $this->MaintainVariable('InputPressure', $this->Translate('Input pressure'), VARIABLETYPE_FLOAT, 'SyrConnect.Pressure', $vpos++, $u);
+
         $u = $this->Use4Ident('FLO');
         $this->MaintainVariable('CurrentFlow', $this->Translate('Current flow'), VARIABLETYPE_INTEGER, 'SyrConnect.Flow', $vpos++, $u);
+
+        $u = $this->Use4Ident('AVO');
+        $this->MaintainVariable('CurrentWithdrawal', $this->Translate('Current withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
 
         $u = $this->Use4Ident('LTV');
         $this->MaintainVariable('LastWithdrawal', $this->Translate('Last withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
