@@ -44,6 +44,7 @@ trait SyrConnectLocalLib
     public static $DEVICE_TYPE_SAFETECH_PLUS = 2;
     public static $DEVICE_TYPE_NEOSOFT_2500 = 3;
     public static $DEVICE_TYPE_NEOSOFT_5000 = 4;
+    public static $DEVICE_TYPE_SAFETECH = 5;
 
     public static $WLAN_STATE_DISCONNECTED = 0;
     public static $WLAN_STATE_CONNECTING = 1;
@@ -98,9 +99,34 @@ trait SyrConnectLocalLib
         $this->CreateVarProfile('SyrConnect.Voltage', VARIABLETYPE_FLOAT, ' V', 0, 0, 0, 2, 'Gauge', [], $reInstall);
         $this->CreateVarProfile('SyrConnect.Temperature', VARIABLETYPE_FLOAT, ' ºC', 0, 0, 0, 1, 'Gauge', [], $reInstall);
 
+        $associations = [
+            ['Wert' => 0, 'Name' => '-', 'Farbe' => -1],
+            ['Wert' => 1, 'Name' => '%d l', 'Farbe' => -1],
+        ];
+        $this->CreateVarProfile('SyrConnect.Volumeleakage', VARIABLETYPE_INTEGER, '', 0, 0, 0, 0, 'Gauge', $associations, $reInstall);
+
+        $associations = [
+            ['Wert' => 0, 'Name' => '-', 'Farbe' => -1],
+            ['Wert' => 1, 'Name' => '%d l/h', 'Farbe' => -1],
+        ];
+        $this->CreateVarProfile('SyrConnect.Flowleakage', VARIABLETYPE_INTEGER, '', 0, 0, 0, 0, 'Gauge', $associations, $reInstall);
+
+        $associations = [
+            ['Wert' => 0, 'Name' => '-', 'Farbe' => -1],
+            ['Wert' => 1, 'Name' => '%d m', 'Farbe' => -1],
+        ];
+        $this->CreateVarProfile('SyrConnect.Timeleakage', VARIABLETYPE_INTEGER, '', 0, 0, 0, 0, 'Gauge', $associations, $reInstall);
+
+        $associations = [
+            ['Wert' => 0, 'Name' => '-', 'Farbe' => -1],
+            ['Wert' => 1, 'Name' => '%d %%', 'Farbe' => -1],
+        ];
+        $this->CreateVarProfile('SyrConnect.Utilization', VARIABLETYPE_INTEGER, '', 0, 100, 0, 0, '', $associations, $reInstall);
+
         $this->CreateVarProfile('SyrConnect.Flow', VARIABLETYPE_INTEGER, ' l/h', 0, 0, 0, 0, 'Gauge', [], $reInstall);
         $this->CreateVarProfile('SyrConnect.Conductivity', VARIABLETYPE_INTEGER, ' µS/cm', 0, 0, 0, 0, 'Gauge', [], $reInstall);
         $this->CreateVarProfile('SyrConnect.Seconds', VARIABLETYPE_INTEGER, ' s', 0, 0, 0, 0, 'Gauge', [], $reInstall);
+        $this->CreateVarProfile('SyrConnect.Minutes', VARIABLETYPE_INTEGER, ' m', 0, 0, 0, 0, 'Gauge', [], $reInstall);
         $this->CreateVarProfile('SyrConnect.Hardness', VARIABLETYPE_INTEGER, ' °dH', 0, 0, 0, 0, 'Gauge', [], $reInstall);
 
         $associations = [
@@ -150,9 +176,10 @@ trait SyrConnectLocalLib
         return [
             self::$DEVICE_TYPE_NONE          => 'none',
             // self::$DEVICE_TYPE_TRIODFR_LS    => 'TrioDFR LS',
-            self::$DEVICE_TYPE_SAFETECH_PLUS => 'SafeTech +',
+            self::$DEVICE_TYPE_SAFETECH_PLUS => 'SafeTech plus',
             // self::$DEVICE_TYPE_NEOSOFT_2500  => 'NeoSoft 2500',
             // self::$DEVICE_TYPE_NEOSOFT_5000  => 'NeoSoft 5000',
+            self::$DEVICE_TYPE_SAFETECH => 'SafeTech',
         ];
     }
 

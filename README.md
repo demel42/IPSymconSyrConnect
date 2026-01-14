@@ -96,12 +96,17 @@ SyrConnect.ValveAction
 SyrConnect.Alarm,
 SyrConnect.Conductivity,
 SyrConnect.Flow,
+SyrConnect.Flowleakage,
 SyrConnect.Hardness,
 SyrConnect.MicroleakageTestState,
+SyrConnect.Minutes,
 SyrConnect.Notification,
 SyrConnect.Profiles_\<InstanceID\>
 SyrConnect.Seconds,
+SyrConnect.Timeleakage,
+SyrConnect.Utilization,
 SyrConnect.ValveState,
+SyrConnect.Volumeleakage,
 SyrConnect.Warning
 
 * Float<br>
@@ -122,6 +127,12 @@ SyrConnect.Volume
 - API-Dokumentation: https://iotsyrpublicapi.z1.web.core.windows.net
 
 ## 7. Versions-Historie
+
+- 1.1 @ 14.01.2026 08:02
+  - Neu: Integration eine SafeTech (ohne "Plus")
+  - Neu: Ermittlung der Dauer einer Entnahme
+  - Neu: Abrufen der aktuellen Grenzwerte der Leckage-Erkennung und Angabe der prozentualern Ausnutzung dieser Grenzen
+  - Fix: "vendor" angegeben
 
 - 1.0 @ 23.08.2025 10:35
   - Initiale Version

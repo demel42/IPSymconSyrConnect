@@ -12,11 +12,20 @@ class SyrConnect extends IPSModule
 
     private $VarProf_Profiles;
 
+    private $SemaphoreID;
+
+    private function GetSemaphoreTM()
+    {
+        $semaphoreTM = 5 * 1000;
+        return $semaphoreTM;
+    }
+
     public function __construct(string $InstanceID)
     {
         parent::__construct($InstanceID);
 
         $this->CommonConstruct(__DIR__);
+        $this->SemaphoreID = __CLASS__ . '_' . $InstanceID;
 
         $this->VarProf_Profiles = 'SyrConnect.Profiles_' . $this->InstanceID;
     }
@@ -37,7 +46,11 @@ class SyrConnect extends IPSModule
 
         $this->RegisterPropertyInteger('device_type', self::$DEVICE_TYPE_NONE);
 
+        $this->RegisterPropertyBoolean('with_limits', false);
+
         $this->RegisterPropertyInteger('update_interval', 60);
+
+        $this->RegisterAttributeInteger('withdrawalBegin', 0);
 
         $this->RegisterAttributeString('UpdateInfo', json_encode([]));
         $this->RegisterAttributeString('ModuleStats', json_encode([]));
@@ -181,8 +194,14 @@ class SyrConnect extends IPSModule
         $u = $this->Use4Ident('AVO');
         $this->MaintainVariable('CurrentWithdrawal', $this->Translate('Current withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
 
+        $u = $this->Use4Ident('DUR');
+        $this->MaintainVariable('CurrentWithdrawalDuration', $this->Translate('Current withdrawal duration'), VARIABLETYPE_INTEGER, 'SyrConnect.Minutes', $vpos++, $u);
+
         $u = $this->Use4Ident('LTV');
         $this->MaintainVariable('LastWithdrawal', $this->Translate('Last withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
+
+        $u = $this->Use4Ident('DUR');
+        $this->MaintainVariable('LastWithdrawalDuration', $this->Translate('Last withdrawal duration'), VARIABLETYPE_INTEGER, 'SyrConnect.Minutes', $vpos++, $u);
 
         $u = $this->Use4Ident('VOL');
         $this->MaintainVariable('CumulativeWithdrawal', $this->Translate('Cumulative withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
@@ -195,6 +214,18 @@ class SyrConnect extends IPSModule
 
         $u = $this->Use4Ident('NOT');
         $this->MaintainVariable('CurrentNotification', $this->Translate('Current notification'), VARIABLETYPE_INTEGER, 'SyrConnect.Notification', $vpos++, $u);
+
+        $u = $this->Use4Ident('PFx');
+        $this->MaintainVariable('FlowleakageLimit', $this->Translate('Flow leakage limitation'), VARIABLETYPE_INTEGER, 'SyrConnect.Flowleakage', $vpos++, $u);
+        $this->MaintainVariable('FlowleakageUtilization', $this->Translate('Flow leakage utilization'), VARIABLETYPE_INTEGER, 'SyrConnect.Utilization', $vpos++, $u);
+
+        $u = $this->Use4Ident('PVx');
+        $this->MaintainVariable('VolumeleakageLimit', $this->Translate('Volume leakage limitation'), VARIABLETYPE_INTEGER, 'SyrConnect.Volumeleakage', $vpos++, $u);
+        $this->MaintainVariable('VolumeleakageUtilization', $this->Translate('Volume leakage utilization'), VARIABLETYPE_INTEGER, 'SyrConnect.Utilization', $vpos++, $u);
+
+        $u = $this->Use4Ident('PTx');
+        $this->MaintainVariable('TimeleakageLimit', $this->Translate('Time leakage limitation'), VARIABLETYPE_INTEGER, 'SyrConnect.Timeleakage', $vpos++, $u);
+        $this->MaintainVariable('TimeleakageUtilization', $this->Translate('Time leakage utilization'), VARIABLETYPE_INTEGER, 'SyrConnect.Utilization', $vpos++, $u);
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
@@ -240,6 +271,12 @@ class SyrConnect extends IPSModule
                 ],
             ],
             'caption' => 'Basic configuration',
+        ];
+
+        $formElements[] = [
+            'type'    => 'CheckBox',
+            'name'    => 'with_limits',
+            'caption' => 'Variables for current leakage limitations',
         ];
 
         $formElements[] = [
@@ -355,8 +392,14 @@ class SyrConnect extends IPSModule
                     $val = $this->RetrieveData('WGW');
                     $msg .= ' - ' . $this->Translate('Gateway') . ': ' . $val . PHP_EOL;
                 }
-
-                $val = $this->RetrieveData('MAC1');
+                switch ($device_type) {
+                    case self::$DEVICE_TYPE_SAFETECH:
+                        $val = $this->RetrieveData('MAC');
+                        break;
+                    default:
+                        $val = $this->RetrieveData('MAC1');
+                        break;
+                }
                 $msg .= ' - ' . $this->Translate('MAC') . ': ' . $val . PHP_EOL;
             } else {
                 $msg .= ' - ' . $this->Translate('not configured') . PHP_EOL;
@@ -364,16 +407,50 @@ class SyrConnect extends IPSModule
 
             $msg .= PHP_EOL;
 
-            $msg .= $this->Translate('LAN') . PHP_EOL;
+            switch ($device_type) {
+                case self::$DEVICE_TYPE_SAFETECH:
+                    break;
+                default:
+                    $msg .= $this->Translate('LAN') . PHP_EOL;
 
-            $val = $this->RetrieveData('EIP');
-            $msg .= ' - ' . $this->Translate('IP') . ': ' . $val . PHP_EOL;
+                    $val = $this->RetrieveData('EIP');
+                    $msg .= ' - ' . $this->Translate('IP') . ': ' . $val . PHP_EOL;
 
-            $val = $this->RetrieveData('EGW');
-            $msg .= ' - ' . $this->Translate('Gateway') . ': ' . $val . PHP_EOL;
+                    $val = $this->RetrieveData('EGW');
+                    $msg .= ' - ' . $this->Translate('Gateway') . ': ' . $val . PHP_EOL;
 
-            $val = $this->RetrieveData('MAC2');
-            $msg .= ' - ' . $this->Translate('MAC') . ': ' . $val . PHP_EOL;
+                    $val = $this->RetrieveData('MAC2');
+                    $msg .= ' - ' . $this->Translate('MAC') . ': ' . $val . PHP_EOL;
+                    break;
+            }
+
+            $msg .= PHP_EOL;
+
+            $val = $this->RetrieveData('SLE');
+            if ($val > 0) {
+                $msg .= $this->Translate('Self-learning phase active') . PHP_EOL;
+
+                $msg .= ' - ' . $this->TranslateFormat('Remaining duration: {$dur}', ['{$dur}' => $this->seconds2duration($val)]) . PHP_EOL;
+
+                $val = $this->RetrieveData('SLF');
+                $msg .= ' - ' . $this->TranslateFormat('Max. flow rate: {$flow} l/h', ['{$flow}' => $val]) . PHP_EOL;
+
+                $val = $this->RetrieveData('SLV');
+                $msg .= ' - ' . $this->TranslateFormat('Max. volume: {$vol} l', ['{$vol}' => $val]) . PHP_EOL;
+
+                $val = $this->RetrieveData('SLT');
+                $msg .= ' - ' . $this->TranslateFormat('Max. duration: {$dur}', ['{$dur}' => $this->seconds2duration($val)]) . PHP_EOL;
+            } else {
+                $msg .= $this->Translate('Self-learning phase inactive') . PHP_EOL;
+            }
+
+            $msg .= PHP_EOL;
+            $val = $this->RetrieveData('NPS');
+            if ($val > 0) {
+                $msg .= $this->Translate('No withdrawal since') . ' ' . $this->seconds2duration($val) . PHP_EOL;
+            } else {
+                $msg .= $this->Translate('Withdrawal active') . PHP_EOL;
+            }
         }
 
         $this->PopupMessage($msg);
@@ -386,11 +463,13 @@ class SyrConnect extends IPSModule
             return;
         }
 
+        $device_type = $this->ReadPropertyInteger('device_type');
+
         $update_interval = '';
 
         if ($this->Use4Ident('VLV')) {
             $val = (int) $this->RetrieveData('VLV');
-            $this->SendDebug(__FUNCTION__, '... ValveState (VLV)=' . $val, 0);
+            $this->SendDebug(__FUNCTION__, 'ValveState (VLV)=' . $val, 0);
             $this->SetValue('ValveState', $val);
 
             if (in_array($val, [self::$VALVE_STATE_CLOSING, self::$VALVE_STATE_OPENING])) {
@@ -438,8 +517,15 @@ class SyrConnect extends IPSModule
         }
 
         if ($this->Use4Ident('BAT')) {
-            $val = (int) $this->RetrieveData('BAT');
-            $f = round($val / 100, 2);
+            switch ($device_type) {
+                case self::$DEVICE_TYPE_SAFETECH:
+                    $f = $this->RetrieveData('BAT');
+                    break;
+                default:
+                    $val = (int) $this->RetrieveData('BAT');
+                    $f = round($val / 100, 2);
+                    break;
+            }
             $this->SendDebug(__FUNCTION__, '... BatteryVoltage (BAT)=' . $f . ' (' . $val . ')', 0);
             $this->SetValue('BatteryVoltage', $f);
         }
@@ -470,7 +556,20 @@ class SyrConnect extends IPSModule
         }
 
         if ($this->Use4Ident('VOL')) {
-            $val = (float) $this->RetrieveData('VOL');
+            switch ($device_type) {
+                case self::$DEVICE_TYPE_SAFETECH:
+                    // {"getVOL":"Vol[L]89555"}
+                    $val = $this->RetrieveData('VOL');
+                    if (is_string($val) && preg_match('/\[L\](\d+)/', $val, $matches)) {
+                        $val = (float) $matches[1];
+                    } else {
+                        $val = (float) $val;
+                    }
+                    break;
+                default:
+                    $val = (float) $this->RetrieveData('VOL');
+                    break;
+            }
             $this->SendDebug(__FUNCTION__, '... CumulativeWithdrawal (VOL)=' . $val, 0);
             $this->SetValue('CumulativeWithdrawal', $val);
         }
@@ -716,6 +815,9 @@ class SyrConnect extends IPSModule
 
         switch ($device_type) {
             case self::$DEVICE_TYPE_TRIODFR_LS:
+            case self::$DEVICE_TYPE_SAFETECH:
+                $device_key = 'safe-tec';
+                break;
             case self::$DEVICE_TYPE_SAFETECH_PLUS:
                 $device_key = 'trio';
                 break;
@@ -748,7 +850,7 @@ class SyrConnect extends IPSModule
 
         $ret = $jbody[$key];
 
-        $this->SendDebug(__FUNCTION__, 'func=' . $func . ', value=' . $ret, 0);
+        // $this->SendDebug(__FUNCTION__, 'func=' . $func . ', value=' . $ret, 0);
         return $ret;
     }
 
@@ -760,6 +862,9 @@ class SyrConnect extends IPSModule
 
         switch ($device_type) {
             case self::$DEVICE_TYPE_TRIODFR_LS:
+            case self::$DEVICE_TYPE_SAFETECH:
+                $device_key = 'safe-tec';
+                break;
             case self::$DEVICE_TYPE_SAFETECH_PLUS:
                 $device_key = 'trio';
                 break;
@@ -800,7 +905,11 @@ class SyrConnect extends IPSModule
     private function do_HttpRequest($url)
     {
         $this->SendDebug(__FUNCTION__, 'http-get: url=' . $url, 0);
-        $time_start = microtime(true);
+
+        if (IPS_SemaphoreEnter($this->SemaphoreID, $this->GetSemaphoreTM()) == false) {
+            $this->SendDebug(__FUNCTION__, 'unable to lock sempahore ' . $this->SemaphoreID, 0);
+            return false;
+        }
 
         $time_start = microtime(true);
 
@@ -846,10 +955,12 @@ class SyrConnect extends IPSModule
                     $err = 'got http-code ' . $httpcode . ' (server error)';
                 } else {
                     $statuscode = self::$IS_HTTPERROR;
-                    $err = 'got http-code ' . $httpcode;
+                    $err = 'got http-code ' . $httpcode . ' (' . $this->HttpCode2Text($httpcode) . ')';
                 }
             }
         }
+
+        IPS_SemaphoreLeave($this->SemaphoreID);
 
         if ($statuscode) {
             $this->SendDebug(__FUNCTION__, '    statuscode=' . $statuscode . ', err=' . $err, 0);
@@ -884,6 +995,7 @@ class SyrConnect extends IPSModule
     private function Use4Ident($func)
     {
         $device_type = $this->ReadPropertyInteger('device_type');
+        $with_limits = $this->ReadPropertyBoolean('with_limits');
 
         $r = false;
 
@@ -908,10 +1020,54 @@ class SyrConnect extends IPSModule
                 case 'NPS':		// Keine Turbinenimpulse seit.. in s
                     $r = true;
                     break;
+                case 'PFx':		// maximaler Durchfluss in l/h (0=deaktiviert)
+                case 'PVx':		// maximales Volumen einer Entnahme in l (0=deaktiviert)
+                case 'PTx':		// maximale Dauer einer Entnahme in Minuten (0=deaktiviert)
+                    $r = $this->Enable4Ident('PRF') && $with_limits;
+                    break;
+                case 'DUR':		// Dauer der Entnahme (selbst ermittelt)
+                    $r = true;
+                    break;
                 default:
                     break;
             }
         }
+
+        if ($device_type == self::$DEVICE_TYPE_SAFETECH) {
+            switch ($func) {
+                case 'AB':		// Absperrung öffnen/schließen	true/false
+                case 'VLV':		// Status der Absperrung
+                case 'PRF':		// Aktuell ausgewähltes Profil
+                case 'DSV':		// Status der Mikroleckage
+                case 'AVO':		// Volumen aktuelle Entnahme in ml
+                case 'BAR':		// Eingangsdruck in mbar	0-16000
+                case 'BUZ':		// Buzzer On/Off bei Alarm	true/false
+                case 'BAT':		// Batteriespannung in 1/100 V	0-1000
+                case 'BAR':		// Eingangsdruck in mbar	0-16000
+                case 'CEL':		// Temperatur in °C	0-1000
+                case 'CND':		// Leitwert in µS/cm	0-5000
+                case 'FLO':		// Aktueller Durchfluss in l/h	0-5000
+                case 'LTV':		// Letztes gezapftes Volumen in Litern
+                case 'NPS':		// Keine Turbinenimpulse seit.. in s
+                case 'SRN':		// Seriennummer des Gerätes
+                case 'VER':		// Firmware Version des Gerätes
+                case 'VOL':		// Kumulatives Volumen in Litern
+                case 'DUR':		// Dauer der Entnahme (selbst ermittelt)
+                    $r = true;
+                    break;
+                case 'PFx':		// maximaler Durchfluss in l/h (0=deaktiviert)
+                case 'PVx':		// maximales Volumen einer Entnahme in l (0=deaktiviert)
+                case 'PTx':		// maximale Dauer einer Entnahme in Minuten (0=deaktiviert)
+                    $r = $this->Enable4Ident('PRF') && $with_limits;
+                    break;
+                case 'DUR':		// Dauer der Entnahme (selbst ermittelt)
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
         if ($device_type == self::$DEVICE_TYPE_SAFETECH_PLUS) {
             switch ($func) {
                 case 'AB':		// Absperrung öffnen/schließen	true/false
@@ -956,8 +1112,8 @@ class SyrConnect extends IPSModule
                 case 'RE2':		// Reserve Kapazität Flasche 2	0-9999	Liter
                 case 'RG1':		// Regeneration Status 0-2 (0 - keine Regeneration, 1 - Flasche 1 regeneriert, 2 - Flasche 2 regeneriert)
                 case 'RTI':		// Zeit bis Regeneration zu Ende	0-5940	Sekunden
-                case 'SRH':		// ng	Nächste Halbjährliche Wartung		dd.mm.yyyy
-                case 'SRV':		// ng	Nächste Jährliche Wartung		dd.mm.yyyy
+                case 'SRH':		// Nächste Halbjährliche Wartung		dd.mm.yyyy
+                case 'SRV':		// Nächste Jährliche Wartung		dd.mm.yyyy
                 case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
                 case 'RPD':		// Regenerationsintervall	1-3	Tag
                 case 'RTM':		// Regerationsuhrzeit	0:00-23:59
@@ -987,8 +1143,8 @@ class SyrConnect extends IPSModule
                 case 'RE2':		// Reserve Kapazität Flasche 2	0-9999	Liter
                 case 'RG1':		// Regeneration Status 0-2 (0 - keine Regeneration, 1 - Flasche 1 regeneriert, 2 - Flasche 2 regeneriert)
                 case 'RTI':		// Zeit bis Regeneration zu Ende	0-5940	Sekunden
-                case 'SRH':		// ng	Nächste Halbjährliche Wartung		dd.mm.yyyy
-                case 'SRV':		// ng	Nächste Jährliche Wartung		dd.mm.yyyy
+                case 'SRH':		// Nächste Halbjährliche Wartung		dd.mm.yyyy
+                case 'SRV':		// Nächste Jährliche Wartung		dd.mm.yyyy
                 case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
                 case 'RPD':		// Regenerationsintervall	1-3	Tag
                 case 'RTM':		// Regerationsuhrzeit	0:00-23:59
@@ -1042,6 +1198,17 @@ class SyrConnect extends IPSModule
             switch ($func) {
                 case 'AB':		// Absperrung öffnen/schließen
                 case 'PRF':		// Aktuell ausgewähltes Profil
+                    $r = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if ($device_type == self::$DEVICE_TYPE_SAFETECH) {
+            switch ($func) {
+                case 'AB':		// Absperrung öffnen/schließen
+                case 'PRF':		// Profil setzen
                     $r = true;
                     break;
                 default:

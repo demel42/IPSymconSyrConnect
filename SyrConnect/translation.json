@@ -14,6 +14,8 @@
 			"Port": "Port",
 			"Device type": "Gerätetyp",
 
+			"Variables for current leakage limitations": "Variablen für aktuelle Leckagebegrenzungen",
+
 			"Update interval": "Aktualisierungsintervall",
 			"Seconds": "Sekunden",
 
@@ -27,6 +29,7 @@
 			"Active profile": "Aktives Profil",
 			"Micro leakage test": "Mikroleckage-Test",
 			"Current withdrawal": "Aktuelle Entnahme",
+			"Current withdrawal duration": "Dauer der aktuellen Entnahme",
 			"Input pressure": "Eingangsdruck",
 			"Audible alarm": "Akustischer Alarm",
 			"Battery voltage": "Batteriespannung",
@@ -34,10 +37,17 @@
 			"Conductivity": "Leitwert",
 			"Current flow": "Aktueller Durchfluss",
 			"Last withdrawal": "Letzte Entnahme",
+			"Last withdrawal duration": "Dauer der letzten Entnahme",
 			"Cumulative withdrawal": "Kumulierte Entnahme",
 			"Current alarm": "Aktueller Alarm",
 			"Current warning": "Aktuelle Warnung",
 			"Current notification": "Aktuelle Meldung",
+			"Flow leakage limitation": "Durchflussleckage-Begrenzung",
+			"Flow leakage utilization": "Durchflussleckage-Ausnutzung",
+			"Volume leakage limitation": "Volumenleckage-Begrenzung",
+			"Volume leakage utilization": "Volumenleckage-Ausnutzung",
+			"Time leakage limitation": "Zeitleckage-Begrenzung",
+			"Time leakage utilization": "Zeitleckage-Ausnutzung",
 
 			"__actions__": "",
 			"Test access": "Zugriff prüfen",
@@ -56,6 +66,14 @@
 			"IP": "IP",
 			"Gateway": "Gateway",
 			"MAC": "MAC",
+			"Self-learning phase active": "Selbstlernphase aktiv",
+			"Remaining duration: {$dur}": "Restdauer: {$dur}",
+			"Max. flow rate: {$flow} l/h": "max. Durchfluß: {$flow} l/h",
+			"Max. volume: {$vol} l": "max. Volumen: {$vol} l",
+			"Max. duration: {$dur}": "max. Dauer: {$dur}",
+			"Self-learning phase inactive": "Selbstlernphase inaktiv",
+			"Withdrawal active": "Entnahme läuft",
+			"No withdrawal since": "Keine Entnahme seit",
 
 			"__end__": ""
 		}
