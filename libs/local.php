@@ -130,7 +130,7 @@ trait SyrConnectLocalLib
         $this->CreateVarProfile('SyrConnect.Hardness', VARIABLETYPE_INTEGER, ' °dH', 0, 0, 0, 0, 'Gauge', [], $reInstall);
 
         $associations = [
-            ['Wert' => 0xA1, 'Name' => $this->Translate('Limit switch'), 'Farbe' => -1],
+            ['Wert' => 0xA1, 'Name' => $this->Translate('End switch'), 'Farbe' => -1],
             ['Wert' => 0xA2, 'Name' => $this->Translate('Motor current'), 'Farbe' => -1],
             ['Wert' => 0xA3, 'Name' => $this->Translate('Volume leakage'), 'Farbe' => -1],
             ['Wert' => 0xA4, 'Name' => $this->Translate('Time leakage'), 'Farbe' => -1],
@@ -150,9 +150,29 @@ trait SyrConnectLocalLib
         $this->CreateVarProfile('SyrConnect.Alarm', VARIABLETYPE_INTEGER, '', 1, 8, 0, 0, '', $associations, $reInstall);
 
         $associations = [
+            ['Wert' => 0xA1, 'Name' => $this->Translate('End switch'), 'Farbe' => -1],
+            ['Wert' => 0xA2, 'Name' => $this->Translate('No network'), 'Farbe' => -1],
+            ['Wert' => 0xA3, 'Name' => $this->Translate('Volume leakage'), 'Farbe' => -1],
+            ['Wert' => 0xA4, 'Name' => $this->Translate('Time leakage'), 'Farbe' => -1],
+            ['Wert' => 0xA5, 'Name' => $this->Translate('Flow leakage'), 'Farbe' => -1],
+            ['Wert' => 0xA6, 'Name' => $this->Translate('Suspected micro leakage'), 'Farbe' => -1],
+            ['Wert' => 0xA7, 'Name' => $this->Translate('Floor sensor leakage'), 'Farbe' => -1],
+            ['Wert' => 0xA8, 'Name' => $this->Translate('Turbine blocked'), 'Farbe' => -1],
+            ['Wert' => 0xA9, 'Name' => $this->Translate('Pressure sensor malfunction'), 'Farbe' => -1],
+            ['Wert' => 0xAA, 'Name' => $this->Translate('Temperature sensor malfunction'), 'Farbe' => -1],
+            ['Wert' => 0xAB, 'Name' => $this->Translate('Conductivity sensor malfunction'), 'Farbe' => -1],
+            ['Wert' => 0xAC, 'Name' => $this->Translate('Conductivity too high'), 'Farbe' => -1],
+            ['Wert' => 0xAD, 'Name' => $this->Translate('Low battery'), 'Farbe' => -1],
+            ['Wert' => 0xAE, 'Name' => $this->Translate('Leakage warning'), 'Farbe' => -1],
+            ['Wert' => 0xAF, 'Name' => $this->Translate('Power interruption'), 'Farbe' => -1],
+            ['Wert' => 0xFF, 'Name' => '-', 'Farbe' => -1],
+        ];
+        $this->CreateVarProfile('SyrConnect.Alarm_SAFETECH', VARIABLETYPE_INTEGER, '', 1, 8, 0, 0, '', $associations, $reInstall);
+
+        $associations = [
             ['Wert' => 0x01, 'Name' => $this->Translate('Power interruption'), 'Farbe' => -1],
             ['Wert' => 0x07, 'Name' => $this->Translate('Leakage warning'), 'Farbe' => -1],
-            ['Wert' => 0x08, 'Name' => $this->Translate('Batteries'), 'Farbe' => -1],
+            ['Wert' => 0x08, 'Name' => $this->Translate('Low battery'), 'Farbe' => -1],
             ['Wert' => 0x02, 'Name' => $this->Translate('Salt supply'), 'Farbe' => -1],
             ['Wert' => 0x09, 'Name' => $this->Translate('Initial filling'), 'Farbe' => -1],
             ['Wert' => 0x10, 'Name' => $this->Translate('Volume leakage'), 'Farbe' => -1],

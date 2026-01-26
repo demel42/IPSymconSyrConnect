@@ -147,6 +147,8 @@ class SyrConnect extends IPSModule
             return;
         }
 
+        $device_type = $this->ReadPropertyInteger('device_type');
+
         $vpos = 1;
 
         $u = $this->Use4Ident('VLV');
@@ -194,20 +196,22 @@ class SyrConnect extends IPSModule
         $u = $this->Use4Ident('AVO');
         $this->MaintainVariable('CurrentWithdrawal', $this->Translate('Current withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
 
-        $u = $this->Use4Ident('DUR');
-        $this->MaintainVariable('CurrentWithdrawalDuration', $this->Translate('Current withdrawal duration'), VARIABLETYPE_INTEGER, 'SyrConnect.Minutes', $vpos++, $u);
-
         $u = $this->Use4Ident('LTV');
         $this->MaintainVariable('LastWithdrawal', $this->Translate('Last withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
-
-        $u = $this->Use4Ident('DUR');
-        $this->MaintainVariable('LastWithdrawalDuration', $this->Translate('Last withdrawal duration'), VARIABLETYPE_INTEGER, 'SyrConnect.Minutes', $vpos++, $u);
 
         $u = $this->Use4Ident('VOL');
         $this->MaintainVariable('CumulativeWithdrawal', $this->Translate('Cumulative withdrawal'), VARIABLETYPE_FLOAT, 'SyrConnect.Volume', $vpos++, $u);
 
         $u = $this->Use4Ident('ALA');
-        $this->MaintainVariable('CurrentAlarm', $this->Translate('Current alarm'), VARIABLETYPE_INTEGER, 'SyrConnect.Alarm', $vpos++, $u);
+        switch ($device_type) {
+            case self::$DEVICE_TYPE_SAFETECH:
+                $prf = 'SyrConnect.Alarm_SAFETECH';
+                break;
+            default:
+                $prf = 'SyrConnect.Alarm';
+                break;
+        }
+        $this->MaintainVariable('CurrentAlarm', $this->Translate('Current alarm'), VARIABLETYPE_INTEGER, $prf, $vpos++, $u);
 
         $u = $this->Use4Ident('WRN');
         $this->MaintainVariable('CurrentWarning', $this->Translate('Current warning'), VARIABLETYPE_INTEGER, 'SyrConnect.Warning', $vpos++, $u);
@@ -225,7 +229,6 @@ class SyrConnect extends IPSModule
 
         $u = $this->Use4Ident('PTx');
         $this->MaintainVariable('TimeleakageLimit', $this->Translate('Time leakage limitation'), VARIABLETYPE_INTEGER, 'SyrConnect.Timeleakage', $vpos++, $u);
-        $this->MaintainVariable('TimeleakageUtilization', $this->Translate('Time leakage utilization'), VARIABLETYPE_INTEGER, 'SyrConnect.Utilization', $vpos++, $u);
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
@@ -426,7 +429,7 @@ class SyrConnect extends IPSModule
 
             $msg .= PHP_EOL;
 
-            $val = $this->RetrieveData('SLE');
+            $val = (float) $this->RetrieveData('SLE');
             if ($val > 0) {
                 $msg .= $this->Translate('Self-learning phase active') . PHP_EOL;
 
@@ -438,14 +441,14 @@ class SyrConnect extends IPSModule
                 $val = $this->RetrieveData('SLV');
                 $msg .= ' - ' . $this->TranslateFormat('Max. volume: {$vol} l', ['{$vol}' => $val]) . PHP_EOL;
 
-                $val = $this->RetrieveData('SLT');
+                $val = (float) $this->RetrieveData('SLT');
                 $msg .= ' - ' . $this->TranslateFormat('Max. duration: {$dur}', ['{$dur}' => $this->seconds2duration($val)]) . PHP_EOL;
             } else {
                 $msg .= $this->Translate('Self-learning phase inactive') . PHP_EOL;
             }
 
             $msg .= PHP_EOL;
-            $val = $this->RetrieveData('NPS');
+            $val = (float) $this->RetrieveData('NPS');
             if ($val > 0) {
                 $msg .= $this->Translate('No withdrawal since') . ' ' . $this->seconds2duration($val) . PHP_EOL;
             } else {
@@ -519,7 +522,7 @@ class SyrConnect extends IPSModule
         if ($this->Use4Ident('BAT')) {
             switch ($device_type) {
                 case self::$DEVICE_TYPE_SAFETECH:
-                    $f = $this->RetrieveData('BAT');
+                    $f = (float) $this->RetrieveData('BAT');
                     break;
                 default:
                     $val = (int) $this->RetrieveData('BAT');
@@ -1018,15 +1021,17 @@ class SyrConnect extends IPSModule
                 case 'VER':		// Firmware Version des Gerätes
                 case 'VOL':		// Kumulatives Volumen in Litern
                 case 'NPS':		// Keine Turbinenimpulse seit.. in s
+                case 'ALM':		// Abrufen der letzten 8 Alarme
+                case 'WRN':		// Abrufen und Quittierung der aktuellen Warnung
+                case 'ALW':		// Abrufen der letzten 8 Warnungen
+                case 'NOT':		// Abrufen und Quittieren der aktuellen Benachrichtigung
+                case 'ALN':		// Abrufen der letzten 8 Benachrichtigungen
                     $r = true;
                     break;
                 case 'PFx':		// maximaler Durchfluss in l/h (0=deaktiviert)
                 case 'PVx':		// maximales Volumen einer Entnahme in l (0=deaktiviert)
                 case 'PTx':		// maximale Dauer einer Entnahme in Minuten (0=deaktiviert)
                     $r = $this->Enable4Ident('PRF') && $with_limits;
-                    break;
-                case 'DUR':		// Dauer der Entnahme (selbst ermittelt)
-                    $r = true;
                     break;
                 default:
                     break;
@@ -1052,16 +1057,12 @@ class SyrConnect extends IPSModule
                 case 'SRN':		// Seriennummer des Gerätes
                 case 'VER':		// Firmware Version des Gerätes
                 case 'VOL':		// Kumulatives Volumen in Litern
-                case 'DUR':		// Dauer der Entnahme (selbst ermittelt)
                     $r = true;
                     break;
                 case 'PFx':		// maximaler Durchfluss in l/h (0=deaktiviert)
                 case 'PVx':		// maximales Volumen einer Entnahme in l (0=deaktiviert)
                 case 'PTx':		// maximale Dauer einer Entnahme in Minuten (0=deaktiviert)
                     $r = $this->Enable4Ident('PRF') && $with_limits;
-                    break;
-                case 'DUR':		// Dauer der Entnahme (selbst ermittelt)
-                    $r = true;
                     break;
                 default:
                     break;
@@ -1087,6 +1088,11 @@ class SyrConnect extends IPSModule
                 case 'SRN':		// Seriennummer des Gerätes
                 case 'VER':		// Firmware Version des Gerätes
                 case 'VOL':		// Kumulatives Volumen in Litern
+                case 'ALM':		// Abrufen der letzten 8 Alarme
+                case 'WRN':		// Abrufen und Quittierung der aktuellen Warnung
+                case 'ALW':		// Abrufen der letzten 8 Warnungen
+                case 'NOT':		// Abrufen und Quittieren der aktuellen Benachrichtigung
+                case 'ALN':		// Abrufen der letzten 8 Benachrichtigungen
                     $r = true;
                     break;
                 default:
@@ -1117,6 +1123,11 @@ class SyrConnect extends IPSModule
                 case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
                 case 'RPD':		// Regenerationsintervall	1-3	Tag
                 case 'RTM':		// Regerationsuhrzeit	0:00-23:59
+                case 'ALM':		// Abrufen der letzten 8 Alarme
+                case 'WRN':		// Abrufen und Quittierung der aktuellen Warnung
+                case 'ALW':		// Abrufen der letzten 8 Warnungen
+                case 'NOT':		// Abrufen und Quittieren der aktuellen Benachrichtigung
+                case 'ALN':		// Abrufen der letzten 8 Benachrichtigungen
                     $r = true;
                     break;
                 default:
@@ -1148,6 +1159,11 @@ class SyrConnect extends IPSModule
                 case 'RMO':		// Regenerationsmodus	1-4 ( 1 Standard, 2 ECO, 3 Power, 4 Automatik)
                 case 'RPD':		// Regenerationsintervall	1-3	Tag
                 case 'RTM':		// Regerationsuhrzeit	0:00-23:59
+                case 'ALM':		// Abrufen der letzten 8 Alarme
+                case 'WRN':		// Abrufen und Quittierung der aktuellen Warnung
+                case 'ALW':		// Abrufen der letzten 8 Warnungen
+                case 'NOT':		// Abrufen und Quittieren der aktuellen Benachrichtigung
+                case 'ALN':		// Abrufen der letzten 8 Benachrichtigungen
                     $r = true;
                     break;
                 default:
@@ -1169,11 +1185,6 @@ class SyrConnect extends IPSModule
             case 'MAC1':	// MAC-Adresse WLAN Schnittstelle
             case 'MAC2':	// MAC-Adresse LAN Schnittstelle
             case 'ALA':		// Abrufen und Quittierung des aktuellen Alarms
-            case 'ALM':		// Abrufen der letzten 8 Alarme
-            case 'WRN':		// Abrufen und Quittierung der aktuellen Warnung
-            case 'ALW':		// Abrufen der letzten 8 Warnungen
-            case 'NOT':		// Abrufen und Quittieren der aktuellen Benachrichtigung
-            case 'ALN':		// Abrufen der letzten 8 Benachrichtigungen
                 $r = true;
                 break;
             default:

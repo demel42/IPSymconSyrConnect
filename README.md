@@ -93,7 +93,7 @@ SyrConnect.Buzzer,
 SyrConnect.ValveAction
 
 * Integer<br>
-SyrConnect.Alarm,
+SyrConnect.Alarm, SyrConnect.Alarm_SAFETECH,
 SyrConnect.Conductivity,
 SyrConnect.Flow,
 SyrConnect.Flowleakage,
@@ -128,9 +128,8 @@ SyrConnect.Volume
 
 ## 7. Versions-Historie
 
-- 1.1 @ 14.01.2026 08:02
+- 1.1 @ 26.01.2026 17:49
   - Neu: Integration eine SafeTech (ohne "Plus")
-  - Neu: Ermittlung der Dauer einer Entnahme
   - Neu: Abrufen der aktuellen Grenzwerte der Leckage-Erkennung und Angabe der prozentualern Ausnutzung dieser Grenzen
   - Fix: "vendor" angegeben
 
