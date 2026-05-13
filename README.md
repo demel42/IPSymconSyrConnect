@@ -128,6 +128,10 @@ SyrConnect.Volume
 
 ## 7. Versions-Historie
 
+- 1.2 @ 11.05.2026 15:02
+  - Fix: Änderung von deprecated php code
+  - update submodule CommonStubs
+
 - 1.1 @ 26.01.2026 17:49
   - Neu: Integration eine SafeTech (ohne "Plus")
   - Neu: Abrufen der aktuellen Grenzwerte der Leckage-Erkennung und Angabe der prozentualern Ausnutzung dieser Grenzen
